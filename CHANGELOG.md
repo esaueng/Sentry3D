@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-03-01
+
+- Fixed Home Assistant startup crash caused by a `name` property conflict in the coordinator
+- Added HACS-compliant brand assets and corrected `hacs.json` schema
+
 ## 0.1.0 - 2026-03-01
 
 - Initial HACS custom integration release

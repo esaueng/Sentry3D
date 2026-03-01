@@ -1,7 +1,7 @@
 {
   "domain": "printersentry",
   "name": "PrinterSentry",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "documentation": "https://github.com/esaueng/PrinterSentry",
   "issue_tracker": "https://github.com/esaueng/PrinterSentry/issues",
   "config_flow": true,
