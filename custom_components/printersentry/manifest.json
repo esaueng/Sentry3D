@@ -1,0 +1,16 @@
+{
+  "domain": "printersentry",
+  "name": "PrinterSentry",
+  "version": "0.1.0",
+  "documentation": "https://github.com/userzero/printersentry",
+  "issue_tracker": "https://github.com/userzero/printersentry/issues",
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "requirements": [],
+  "codeowners": [
+    "@userzero"
+  ],
+  "loggers": [
+    "custom_components.printersentry"
+  ]
+}
