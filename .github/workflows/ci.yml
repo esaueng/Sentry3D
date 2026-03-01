@@ -13,13 +13,14 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
+          ignore: description,topics
 
   hassfest:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Hassfest
-        uses: home-assistant/actions/hassfest@master
+        uses: home-assistant/actions/hassfest@v1
 
   tests:
     runs-on: ubuntu-latest

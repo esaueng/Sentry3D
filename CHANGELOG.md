@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.6 - 2026-03-01
+
+- CI/hassfest: sorted `manifest.json` keys to required order
+- Added `CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)` to satisfy hassfest config schema guidance
+
+## 0.1.5 - 2026-03-01
+
+- CI: ignored HACS `description/topics` checks in workflow until repo metadata is set
+- CI: simplified test dependencies to avoid Home Assistant package resolver conflicts
+
 ## 0.1.4 - 2026-03-01
 
 - Added `EMPTY` model status for clearly empty build plates
