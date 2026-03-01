@@ -314,6 +314,17 @@ class PrinterSentryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._last_frame_time = now
             self._capture_backoff_sec = 0
             self._capture_backoff_until = None
+        except asyncio.CancelledError:
+            if self.hass.is_stopping:
+                raise
+            _LOGGER.warning(
+                "RTSP frame capture refresh was cancelled for %s; keeping state as UNKNOWN",
+                self.integration_name,
+            )
+            return await self._async_finalize_cycle(
+                unknown_result("Frame capture cancelled"),
+                now,
+            )
         except Exception as err:  # noqa: BLE001
             self._capture_backoff_sec = (
                 self.check_interval_sec

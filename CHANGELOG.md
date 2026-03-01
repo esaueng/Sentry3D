@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2 - 2026-03-01
+
+- Changed setup flow to avoid blocking config entry startup on first camera refresh
+- Added cancellation handling for RTSP capture refreshes to keep integration running
+
 ## 0.1.1 - 2026-03-01
 
 - Fixed Home Assistant startup crash caused by a `name` property conflict in the coordinator

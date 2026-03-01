@@ -34,14 +34,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up PrinterSentry from a config entry."""
     coordinator = PrinterSentryCoordinator(hass, entry)
     await coordinator.async_initialize()
-    await coordinator.async_config_entry_first_refresh()
-
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
     await _async_register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    hass.async_create_task(
+        coordinator.async_refresh(),
+        name=f"{DOMAIN}_{entry.entry_id}_initial_refresh",
+    )
     return True
 
 
