@@ -62,16 +62,41 @@ from .const import (
 )
 
 
-def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
+def _default_values() -> dict[str, Any]:
+    return {
+        CONF_NAME: DEFAULT_NAME,
+        CONF_RTSP_URL: "rtsp://",
+        CONF_LLM_PROVIDER: DEFAULT_LLM_PROVIDER,
+        CONF_OLLAMA_BASE_URL: "http://ollama-host:11434",
+        CONF_OLLAMA_MODEL: "llava",
+        CONF_OPENAI_BASE_URL: DEFAULT_OPENAI_BASE_URL,
+        CONF_OPENAI_MODEL: DEFAULT_OPENAI_MODEL,
+        CONF_OPENAI_API_KEY: "",
+        CONF_CHECK_INTERVAL_SEC: DEFAULT_CHECK_INTERVAL_SEC,
+        CONF_OLLAMA_TIMEOUT_SEC: DEFAULT_OLLAMA_TIMEOUT_SEC,
+        CONF_HISTORY_SIZE: DEFAULT_HISTORY_SIZE,
+        CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD: DEFAULT_UNHEALTHY_CONSECUTIVE_THRESHOLD,
+        CONF_MAX_BACKOFF_SEC: DEFAULT_MAX_BACKOFF_SEC,
+        CONF_CAPTURE_METHOD: DEFAULT_CAPTURE_METHOD,
+        CONF_NOTIFY_ON_INCIDENT: DEFAULT_NOTIFY_ON_INCIDENT,
+        CONF_MIN_NOTIFICATION_INTERVAL_SEC: DEFAULT_MIN_NOTIFICATION_INTERVAL_SEC,
+        CONF_MOTION_DETECTION_ENABLED: DEFAULT_MOTION_DETECTION_ENABLED,
+        CONF_MOTION_THRESHOLD: DEFAULT_MOTION_THRESHOLD,
+    }
+
+
+def _entry_defaults(entry: config_entries.ConfigEntry) -> dict[str, Any]:
+    defaults = _default_values()
+    for key, fallback in defaults.items():
+        defaults[key] = entry.options.get(key, entry.data.get(key, fallback))
+    return defaults
+
+
+def _build_common_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(CONF_NAME, default=defaults[CONF_NAME]): TextSelector(),
             vol.Required(CONF_RTSP_URL, default=defaults[CONF_RTSP_URL]): TextSelector(),
-            vol.Required(
-                CONF_OLLAMA_BASE_URL,
-                default=defaults[CONF_OLLAMA_BASE_URL],
-            ): TextSelector(),
-            vol.Required(CONF_OLLAMA_MODEL, default=defaults[CONF_OLLAMA_MODEL]): TextSelector(),
             vol.Required(
                 CONF_LLM_PROVIDER,
                 default=defaults[CONF_LLM_PROVIDER],
@@ -83,26 +108,10 @@ def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
                 )
             ),
             vol.Required(
-                CONF_OPENAI_BASE_URL,
-                default=defaults[CONF_OPENAI_BASE_URL],
-            ): TextSelector(),
-            vol.Required(
-                CONF_OPENAI_MODEL,
-                default=defaults[CONF_OPENAI_MODEL],
-            ): TextSelector(),
-            vol.Required(
-                CONF_OPENAI_API_KEY,
-                default=defaults[CONF_OPENAI_API_KEY],
-            ): TextSelector(),
-            vol.Required(
                 CONF_CHECK_INTERVAL_SEC,
                 default=defaults[CONF_CHECK_INTERVAL_SEC],
             ): NumberSelector(
-                NumberSelectorConfig(
-                    min=1,
-                    max=3600,
-                    mode=NumberSelectorMode.BOX,
-                )
+                NumberSelectorConfig(min=1, max=3600, mode=NumberSelectorMode.BOX)
             ),
             vol.Required(
                 CONF_OLLAMA_TIMEOUT_SEC,
@@ -159,8 +168,45 @@ def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
     )
 
 
-def _validate_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
+def _build_ollama_schema(defaults: dict[str, Any]) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_OLLAMA_BASE_URL,
+                default=defaults[CONF_OLLAMA_BASE_URL],
+            ): TextSelector(),
+            vol.Required(
+                CONF_OLLAMA_MODEL,
+                default=defaults[CONF_OLLAMA_MODEL],
+            ): TextSelector(),
+        }
+    )
+
+
+def _build_openai_schema(defaults: dict[str, Any]) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_OPENAI_BASE_URL,
+                default=defaults[CONF_OPENAI_BASE_URL],
+            ): TextSelector(),
+            vol.Required(
+                CONF_OPENAI_MODEL,
+                default=defaults[CONF_OPENAI_MODEL],
+            ): TextSelector(),
+            vol.Required(
+                CONF_OPENAI_API_KEY,
+                default=defaults[CONF_OPENAI_API_KEY],
+            ): TextSelector(),
+        }
+    )
+
+
+def _validate_common_input(user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(user_input)
+
+    name = str(data[CONF_NAME]).strip() or DEFAULT_NAME
+    data[CONF_NAME] = name
 
     rtsp_url = str(data[CONF_RTSP_URL]).strip()
     parsed_rtsp = urlparse(rtsp_url)
@@ -168,40 +214,10 @@ def _validate_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("invalid_rtsp_url")
     data[CONF_RTSP_URL] = rtsp_url
 
-    base_url = str(data[CONF_OLLAMA_BASE_URL]).strip().rstrip("/")
-    parsed = urlparse(base_url)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ValueError("invalid_ollama_url")
-    data[CONF_OLLAMA_BASE_URL] = base_url
-
-    model = str(data[CONF_OLLAMA_MODEL]).strip()
-    if not model:
-        raise ValueError("invalid_model")
-    data[CONF_OLLAMA_MODEL] = model
-
     provider = str(data[CONF_LLM_PROVIDER]).strip().lower()
     if provider not in {LLM_PROVIDER_OLLAMA, LLM_PROVIDER_OPENAI}:
         raise ValueError("invalid_llm_provider")
     data[CONF_LLM_PROVIDER] = provider
-
-    openai_base = str(data[CONF_OPENAI_BASE_URL]).strip().rstrip("/")
-    parsed_openai = urlparse(openai_base)
-    if parsed_openai.scheme not in {"http", "https"} or not parsed_openai.netloc:
-        raise ValueError("invalid_openai_url")
-    data[CONF_OPENAI_BASE_URL] = openai_base
-
-    openai_model = str(data[CONF_OPENAI_MODEL]).strip()
-    if not openai_model:
-        raise ValueError("invalid_openai_model")
-    data[CONF_OPENAI_MODEL] = openai_model
-
-    openai_api_key = str(data[CONF_OPENAI_API_KEY]).strip()
-    if provider == LLM_PROVIDER_OPENAI and not openai_api_key:
-        raise ValueError("missing_openai_api_key")
-    data[CONF_OPENAI_API_KEY] = openai_api_key
-
-    name = str(data[CONF_NAME]).strip() or DEFAULT_NAME
-    data[CONF_NAME] = name
 
     numeric_fields = (
         CONF_CHECK_INTERVAL_SEC,
@@ -215,8 +231,10 @@ def _validate_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
         data[key] = int(data[key])
 
     data[CONF_MOTION_THRESHOLD] = float(data[CONF_MOTION_THRESHOLD])
-    data[CONF_MOTION_DETECTION_ENABLED] = bool(data[CONF_MOTION_DETECTION_ENABLED])
+    if data[CONF_MOTION_THRESHOLD] <= 0:
+        raise ValueError("invalid_motion_threshold")
 
+    data[CONF_MOTION_DETECTION_ENABLED] = bool(data[CONF_MOTION_DETECTION_ENABLED])
     data[CONF_NOTIFY_ON_INCIDENT] = bool(data[CONF_NOTIFY_ON_INCIDENT])
 
     capture_method = str(data[CONF_CAPTURE_METHOD])
@@ -227,51 +245,111 @@ def _validate_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _validate_ollama_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    data = dict(user_input)
+
+    base_url = str(data[CONF_OLLAMA_BASE_URL]).strip().rstrip("/")
+    parsed = urlparse(base_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("invalid_ollama_url")
+    data[CONF_OLLAMA_BASE_URL] = base_url
+
+    model = str(data[CONF_OLLAMA_MODEL]).strip()
+    if not model:
+        raise ValueError("invalid_model")
+    data[CONF_OLLAMA_MODEL] = model
+
+    return data
+
+
+def _validate_openai_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    data = dict(user_input)
+
+    openai_base = str(data[CONF_OPENAI_BASE_URL]).strip().rstrip("/")
+    parsed_openai = urlparse(openai_base)
+    if parsed_openai.scheme not in {"http", "https"} or not parsed_openai.netloc:
+        raise ValueError("invalid_openai_url")
+    data[CONF_OPENAI_BASE_URL] = openai_base
+
+    openai_model = str(data[CONF_OPENAI_MODEL]).strip()
+    if not openai_model:
+        raise ValueError("invalid_openai_model")
+    data[CONF_OPENAI_MODEL] = openai_model
+
+    openai_api_key = str(data[CONF_OPENAI_API_KEY]).strip()
+    if not openai_api_key:
+        raise ValueError("missing_openai_api_key")
+    data[CONF_OPENAI_API_KEY] = openai_api_key
+
+    return data
+
+
+def _merge_flow_data(
+    defaults: dict[str, Any],
+    common: dict[str, Any],
+    provider_specific: dict[str, Any],
+) -> dict[str, Any]:
+    merged = dict(defaults)
+    merged.update(common)
+    merged.update(provider_specific)
+    return merged
+
+
 class Sentry3DConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle the config flow for Sentry3D."""
 
     VERSION = 1
 
+    _defaults: dict[str, Any]
+    _common_input: dict[str, Any]
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle first step."""
+        """Handle common settings step."""
         errors: dict[str, str] = {}
-
-        defaults = {
-            CONF_NAME: DEFAULT_NAME,
-            CONF_RTSP_URL: "rtsp://",
-            CONF_OLLAMA_BASE_URL: "http://ollama-host:11434",
-            CONF_OLLAMA_MODEL: "llava",
-            CONF_LLM_PROVIDER: DEFAULT_LLM_PROVIDER,
-            CONF_OPENAI_BASE_URL: DEFAULT_OPENAI_BASE_URL,
-            CONF_OPENAI_MODEL: DEFAULT_OPENAI_MODEL,
-            CONF_OPENAI_API_KEY: "",
-            CONF_CHECK_INTERVAL_SEC: DEFAULT_CHECK_INTERVAL_SEC,
-            CONF_OLLAMA_TIMEOUT_SEC: DEFAULT_OLLAMA_TIMEOUT_SEC,
-            CONF_HISTORY_SIZE: DEFAULT_HISTORY_SIZE,
-            CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD: DEFAULT_UNHEALTHY_CONSECUTIVE_THRESHOLD,
-            CONF_MAX_BACKOFF_SEC: DEFAULT_MAX_BACKOFF_SEC,
-            CONF_CAPTURE_METHOD: DEFAULT_CAPTURE_METHOD,
-            CONF_NOTIFY_ON_INCIDENT: DEFAULT_NOTIFY_ON_INCIDENT,
-            CONF_MIN_NOTIFICATION_INTERVAL_SEC: DEFAULT_MIN_NOTIFICATION_INTERVAL_SEC,
-            CONF_MOTION_DETECTION_ENABLED: DEFAULT_MOTION_DETECTION_ENABLED,
-            CONF_MOTION_THRESHOLD: DEFAULT_MOTION_THRESHOLD,
-        }
+        self._defaults = getattr(self, "_defaults", _default_values())
 
         if user_input is not None:
             try:
-                validated = _validate_user_input(user_input)
+                self._common_input = _validate_common_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
+                self._defaults.update(self._common_input)
+                if self._common_input[CONF_LLM_PROVIDER] == LLM_PROVIDER_OPENAI:
+                    return await self.async_step_openai()
+                return await self.async_step_ollama()
+            self._defaults.update(user_input)
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_build_common_schema(self._defaults),
+            errors=errors,
+        )
+
+    async def async_step_ollama(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle Ollama provider settings step."""
+        if not hasattr(self, "_common_input"):
+            return await self.async_step_user()
+
+        errors: dict[str, str] = {}
+        defaults = self._defaults
+
+        if user_input is not None:
+            try:
+                provider_input = _validate_ollama_input(user_input)
+            except ValueError as err:
+                errors["base"] = str(err)
+            else:
+                validated = _merge_flow_data(defaults, self._common_input, provider_input)
                 unique_source = (
-                    f"{validated[CONF_RTSP_URL]}::{validated[CONF_LLM_PROVIDER]}::{validated[CONF_OLLAMA_BASE_URL]}::{validated[CONF_OPENAI_BASE_URL]}"
+                    f"{validated[CONF_RTSP_URL]}::{validated[CONF_LLM_PROVIDER]}::{validated[CONF_OLLAMA_BASE_URL]}"
                 )
                 unique_id = hashlib.sha256(unique_source.encode("utf-8")).hexdigest()
-                await self.async_set_unique_id(
-                    f"{DOMAIN}_{unique_id}"
-                )
+                await self.async_set_unique_id(f"{DOMAIN}_{unique_id}")
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title=validated[CONF_NAME],
@@ -280,8 +358,43 @@ class Sentry3DConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             defaults.update(user_input)
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=_build_schema(defaults),
+            step_id="ollama",
+            data_schema=_build_ollama_schema(defaults),
+            errors=errors,
+        )
+
+    async def async_step_openai(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle OpenAI provider settings step."""
+        if not hasattr(self, "_common_input"):
+            return await self.async_step_user()
+
+        errors: dict[str, str] = {}
+        defaults = self._defaults
+
+        if user_input is not None:
+            try:
+                provider_input = _validate_openai_input(user_input)
+            except ValueError as err:
+                errors["base"] = str(err)
+            else:
+                validated = _merge_flow_data(defaults, self._common_input, provider_input)
+                unique_source = (
+                    f"{validated[CONF_RTSP_URL]}::{validated[CONF_LLM_PROVIDER]}::{validated[CONF_OPENAI_BASE_URL]}"
+                )
+                unique_id = hashlib.sha256(unique_source.encode("utf-8")).hexdigest()
+                await self.async_set_unique_id(f"{DOMAIN}_{unique_id}")
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(
+                    title=validated[CONF_NAME],
+                    data=validated,
+                )
+            defaults.update(user_input)
+
+        return self.async_show_form(
+            step_id="openai",
+            data_schema=_build_openai_schema(defaults),
             errors=errors,
         )
 
@@ -296,105 +409,78 @@ class Sentry3DOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, entry: config_entries.ConfigEntry) -> None:
         self._entry = entry
+        self._defaults = _entry_defaults(entry)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage options."""
+        """Manage common options."""
         errors: dict[str, str] = {}
-
-        defaults = {
-            CONF_NAME: self._entry.options.get(
-                CONF_NAME,
-                self._entry.data.get(CONF_NAME, DEFAULT_NAME),
-            ),
-            CONF_RTSP_URL: self._entry.options.get(CONF_RTSP_URL, self._entry.data[CONF_RTSP_URL]),
-            CONF_OLLAMA_BASE_URL: self._entry.options.get(
-                CONF_OLLAMA_BASE_URL,
-                self._entry.data[CONF_OLLAMA_BASE_URL],
-            ),
-            CONF_OLLAMA_MODEL: self._entry.options.get(
-                CONF_OLLAMA_MODEL,
-                self._entry.data[CONF_OLLAMA_MODEL],
-            ),
-            CONF_LLM_PROVIDER: self._entry.options.get(
-                CONF_LLM_PROVIDER,
-                self._entry.data.get(CONF_LLM_PROVIDER, DEFAULT_LLM_PROVIDER),
-            ),
-            CONF_OPENAI_BASE_URL: self._entry.options.get(
-                CONF_OPENAI_BASE_URL,
-                self._entry.data.get(CONF_OPENAI_BASE_URL, DEFAULT_OPENAI_BASE_URL),
-            ),
-            CONF_OPENAI_MODEL: self._entry.options.get(
-                CONF_OPENAI_MODEL,
-                self._entry.data.get(CONF_OPENAI_MODEL, DEFAULT_OPENAI_MODEL),
-            ),
-            CONF_OPENAI_API_KEY: self._entry.options.get(
-                CONF_OPENAI_API_KEY,
-                self._entry.data.get(CONF_OPENAI_API_KEY, ""),
-            ),
-            CONF_CHECK_INTERVAL_SEC: self._entry.options.get(
-                CONF_CHECK_INTERVAL_SEC,
-                self._entry.data.get(CONF_CHECK_INTERVAL_SEC, DEFAULT_CHECK_INTERVAL_SEC),
-            ),
-            CONF_OLLAMA_TIMEOUT_SEC: self._entry.options.get(
-                CONF_OLLAMA_TIMEOUT_SEC,
-                self._entry.data.get(CONF_OLLAMA_TIMEOUT_SEC, DEFAULT_OLLAMA_TIMEOUT_SEC),
-            ),
-            CONF_HISTORY_SIZE: self._entry.options.get(
-                CONF_HISTORY_SIZE,
-                self._entry.data.get(CONF_HISTORY_SIZE, DEFAULT_HISTORY_SIZE),
-            ),
-            CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD: self._entry.options.get(
-                CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD,
-                self._entry.data.get(
-                    CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD,
-                    DEFAULT_UNHEALTHY_CONSECUTIVE_THRESHOLD,
-                ),
-            ),
-            CONF_MAX_BACKOFF_SEC: self._entry.options.get(
-                CONF_MAX_BACKOFF_SEC,
-                self._entry.data.get(CONF_MAX_BACKOFF_SEC, DEFAULT_MAX_BACKOFF_SEC),
-            ),
-            CONF_CAPTURE_METHOD: self._entry.options.get(
-                CONF_CAPTURE_METHOD,
-                self._entry.data.get(CONF_CAPTURE_METHOD, DEFAULT_CAPTURE_METHOD),
-            ),
-            CONF_NOTIFY_ON_INCIDENT: self._entry.options.get(
-                CONF_NOTIFY_ON_INCIDENT,
-                self._entry.data.get(CONF_NOTIFY_ON_INCIDENT, DEFAULT_NOTIFY_ON_INCIDENT),
-            ),
-            CONF_MIN_NOTIFICATION_INTERVAL_SEC: self._entry.options.get(
-                CONF_MIN_NOTIFICATION_INTERVAL_SEC,
-                self._entry.data.get(
-                    CONF_MIN_NOTIFICATION_INTERVAL_SEC,
-                    DEFAULT_MIN_NOTIFICATION_INTERVAL_SEC,
-                ),
-            ),
-            CONF_MOTION_DETECTION_ENABLED: self._entry.options.get(
-                CONF_MOTION_DETECTION_ENABLED,
-                self._entry.data.get(
-                    CONF_MOTION_DETECTION_ENABLED,
-                    DEFAULT_MOTION_DETECTION_ENABLED,
-                ),
-            ),
-            CONF_MOTION_THRESHOLD: self._entry.options.get(
-                CONF_MOTION_THRESHOLD,
-                self._entry.data.get(CONF_MOTION_THRESHOLD, DEFAULT_MOTION_THRESHOLD),
-            ),
-        }
 
         if user_input is not None:
             try:
-                validated = _validate_user_input(user_input)
+                self._common_input = _validate_common_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
-                return self.async_create_entry(title="", data=validated)
-            defaults.update(user_input)
+                self._defaults.update(self._common_input)
+                if self._common_input[CONF_LLM_PROVIDER] == LLM_PROVIDER_OPENAI:
+                    return await self.async_step_openai()
+                return await self.async_step_ollama()
+            self._defaults.update(user_input)
 
         return self.async_show_form(
             step_id="init",
-            data_schema=_build_schema(defaults),
+            data_schema=_build_common_schema(self._defaults),
+            errors=errors,
+        )
+
+    async def async_step_ollama(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage Ollama provider options."""
+        if not hasattr(self, "_common_input"):
+            return await self.async_step_init()
+
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                provider_input = _validate_ollama_input(user_input)
+            except ValueError as err:
+                errors["base"] = str(err)
+            else:
+                merged = _merge_flow_data(self._defaults, self._common_input, provider_input)
+                return self.async_create_entry(title="", data=merged)
+            self._defaults.update(user_input)
+
+        return self.async_show_form(
+            step_id="ollama",
+            data_schema=_build_ollama_schema(self._defaults),
+            errors=errors,
+        )
+
+    async def async_step_openai(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage OpenAI provider options."""
+        if not hasattr(self, "_common_input"):
+            return await self.async_step_init()
+
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                provider_input = _validate_openai_input(user_input)
+            except ValueError as err:
+                errors["base"] = str(err)
+            else:
+                merged = _merge_flow_data(self._defaults, self._common_input, provider_input)
+                return self.async_create_entry(title="", data=merged)
+            self._defaults.update(user_input)
+
+        return self.async_show_form(
+            step_id="openai",
+            data_schema=_build_openai_schema(self._defaults),
             errors=errors,
         )

@@ -8,12 +8,7 @@
         "data": {
           "name": "Name",
           "rtsp_url": "RTSP URL",
-          "ollama_base_url": "Ollama Base URL",
-          "ollama_model": "Ollama Model",
           "llm_provider": "LLM Provider",
-          "openai_base_url": "OpenAI Base URL",
-          "openai_model": "OpenAI Model",
-          "openai_api_key": "OpenAI API Key",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",
           "history_size": "History Size",
@@ -25,6 +20,23 @@
           "motion_detection_enabled": "Motion Detection Enabled",
           "motion_threshold": "Motion Threshold"
         }
+      },
+      "ollama": {
+        "title": "Ollama Settings",
+        "description": "Configure Ollama-specific connection details.",
+        "data": {
+          "ollama_base_url": "Ollama Base URL",
+          "ollama_model": "Ollama Model"
+        }
+      },
+      "openai": {
+        "title": "OpenAI Settings",
+        "description": "Configure OpenAI-specific connection details.",
+        "data": {
+          "openai_base_url": "OpenAI Base URL",
+          "openai_model": "OpenAI Model",
+          "openai_api_key": "OpenAI API Key"
+        }
       }
     },
     "error": {
@@ -33,6 +45,7 @@
       "invalid_model": "Ollama model is required",
       "invalid_capture_method": "Invalid capture method",
       "invalid_llm_provider": "Invalid LLM provider",
+      "invalid_motion_threshold": "Motion threshold must be greater than zero",
       "invalid_openai_url": "OpenAI Base URL must be a valid http:// or https:// URL",
       "invalid_openai_model": "OpenAI model is required",
       "missing_openai_api_key": "OpenAI API key is required when provider is OpenAI"
@@ -46,12 +59,7 @@
         "data": {
           "name": "Name",
           "rtsp_url": "RTSP URL",
-          "ollama_base_url": "Ollama Base URL",
-          "ollama_model": "Ollama Model",
           "llm_provider": "LLM Provider",
-          "openai_base_url": "OpenAI Base URL",
-          "openai_model": "OpenAI Model",
-          "openai_api_key": "OpenAI API Key",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",
           "history_size": "History Size",
@@ -63,6 +71,23 @@
           "motion_detection_enabled": "Motion Detection Enabled",
           "motion_threshold": "Motion Threshold"
         }
+      },
+      "ollama": {
+        "title": "Ollama Settings",
+        "description": "Update Ollama-specific connection details.",
+        "data": {
+          "ollama_base_url": "Ollama Base URL",
+          "ollama_model": "Ollama Model"
+        }
+      },
+      "openai": {
+        "title": "OpenAI Settings",
+        "description": "Update OpenAI-specific connection details.",
+        "data": {
+          "openai_base_url": "OpenAI Base URL",
+          "openai_model": "OpenAI Model",
+          "openai_api_key": "OpenAI API Key"
+        }
       }
     },
     "error": {
@@ -71,6 +96,7 @@
       "invalid_model": "Ollama model is required",
       "invalid_capture_method": "Invalid capture method",
       "invalid_llm_provider": "Invalid LLM provider",
+      "invalid_motion_threshold": "Motion threshold must be greater than zero",
       "invalid_openai_url": "OpenAI Base URL must be a valid http:// or https:// URL",
       "invalid_openai_model": "OpenAI model is required",
       "missing_openai_api_key": "OpenAI API key is required when provider is OpenAI"
