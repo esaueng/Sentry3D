@@ -774,7 +774,7 @@ class PrinterSentryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 f"Time: {now.isoformat()}\n\n"
                 "Open camera.printersentry_last_frame (or your dashboard card) to inspect the print."
             ),
-            title="PrinterSentry Alert: Print Unhealthy",
+            title="Sentry3D Alert: Print Unhealthy",
             notification_id=f"{DOMAIN}_{self.config_entry.entry_id}_incident",
         )
 

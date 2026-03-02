@@ -1,9 +1,9 @@
 {
-  "title": "PrinterSentry",
+  "title": "Sentry3D",
   "config": {
     "step": {
       "user": {
-        "title": "Add PrinterSentry",
+        "title": "Add Sentry3D",
         "description": "Monitor a printer RTSP stream with remote vision LLM classification.",
         "data": {
           "name": "Name",
@@ -41,8 +41,8 @@
   "options": {
     "step": {
       "init": {
-        "title": "PrinterSentry Options",
-        "description": "Update PrinterSentry runtime options.",
+        "title": "Sentry3D Options",
+        "description": "Update Sentry3D runtime options.",
         "data": {
           "name": "Name",
           "rtsp_url": "RTSP URL",

@@ -1,16 +1,16 @@
 {
   "domain": "printersentry",
-  "name": "PrinterSentry",
+  "name": "Sentry3D",
   "codeowners": [
     "@esaueng"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/esaueng/PrinterSentry",
+  "documentation": "https://github.com/esaueng/Sentry3D",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/esaueng/PrinterSentry/issues",
+  "issue_tracker": "https://github.com/esaueng/Sentry3D/issues",
   "loggers": [
     "custom_components.printersentry"
   ],
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.2.2"
 }

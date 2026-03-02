@@ -1,6 +1,6 @@
-# PrinterSentry
+# Sentry3D
 
-PrinterSentry is a Home Assistant custom integration (HACS-compatible) that monitors a 3D printer RTSP/RTSPS camera stream and classifies print health as `HEALTHY`, `UNHEALTHY`, or `EMPTY` using a remote vision LLM (Ollama or OpenAI-compatible API).
+Sentry3D is a Home Assistant custom integration (HACS-compatible) that monitors a 3D printer RTSP/RTSPS camera stream and classifies print health as `HEALTHY`, `UNHEALTHY`, or `EMPTY` using a remote vision LLM (Ollama or OpenAI-compatible API).
 
 It runs inside Home Assistant (Core / Container / OS). This repository does **not** run an Ollama container.
 
@@ -55,7 +55,7 @@ Example model names: `llava`, `llava:13b`, or another vision-capable model avail
 
 1. Open HACS in Home Assistant.
 1. Add this repository as a custom repository (category: Integration).
-1. Install `PrinterSentry`.
+1. Install `Sentry3D`.
 1. Restart Home Assistant.
 
 ### Manual
@@ -66,9 +66,9 @@ Example model names: `llava`, `llava:13b`, or another vision-capable model avail
 ## Configuration
 
 1. In Home Assistant UI, go to `Settings -> Devices & Services -> Add Integration`.
-1. Search for `PrinterSentry`.
+1. Search for `Sentry3D`.
 1. Enter required values:
-   - `name` (default `PrinterSentry`)
+   - `name` (default `Sentry3D`)
    - `rtsp_url`
    - `ollama_base_url` (example: `http://ollama-host:11434`)
    - `ollama_model`
@@ -158,7 +158,7 @@ These services do not control hardware. They only log and fire a stub event.
 
 ### JSON parsing failures
 
-- PrinterSentry enforces strict JSON output.
+- Sentry3D enforces strict JSON output.
 - Invalid output is retried once, then marked `UNKNOWN`.
 - Check Home Assistant logs for parser details.
 

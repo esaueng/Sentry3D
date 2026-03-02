@@ -41,7 +41,7 @@ class PrinterSentryBaseEntity(CoordinatorEntity[PrinterSentryCoordinator]):
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": coordinator.integration_name,
-            "manufacturer": "PrinterSentry",
+            "manufacturer": "Sentry3D",
             "model": "RTSP + Ollama Vision Monitor",
             "configuration_url": coordinator.ollama_base_url,
         }

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.2 - 2026-03-02
+
+- Renamed project branding from `3DSentry` to `Sentry3D`
+- Updated integration display name, defaults, docs, translations, and notification title to `Sentry3D`
+- Kept integration domain as `printersentry` for compatibility
+
+## 0.2.1 - 2026-03-02
+
+- Renamed project branding from `PrinterSentry` to `3DSentry` across UI strings, docs, and metadata
+- Kept integration domain as `printersentry` for compatibility with existing installs
+
 ## 0.2.0 - 2026-03-01
 
 - Added motion-gated inference so LLM calls are skipped when no motion is detected
