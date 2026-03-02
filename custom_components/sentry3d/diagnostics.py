@@ -1,4 +1,4 @@
-"""Diagnostics support for PrinterSentry."""
+"""Diagnostics support for Sentry3D."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from .const import (
     CONF_RTSP_URL,
     DOMAIN,
 )
-from .coordinator import PrinterSentryCoordinator
+from .coordinator import Sentry3DCoordinator
 
 REDACT_KEYS = {CONF_USERNAME, CONF_OPENAI_API_KEY}
 
@@ -48,7 +48,7 @@ async def async_get_config_entry_diagnostics(
     entry: ConfigEntry,
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
-    coordinator: PrinterSentryCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: Sentry3DCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     data = {
         "entry": {

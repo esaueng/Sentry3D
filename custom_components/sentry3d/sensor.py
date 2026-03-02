@@ -1,4 +1,4 @@
-"""Sensor platform for PrinterSentry."""
+"""Sensor platform for Sentry3D."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import PrinterSentryCoordinator
+from .coordinator import Sentry3DCoordinator
 
 
 async def async_setup_entry(
@@ -19,40 +19,40 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up PrinterSentry sensors."""
-    coordinator: PrinterSentryCoordinator = hass.data[DOMAIN][entry.entry_id]
+    """Set up Sentry3D sensors."""
+    coordinator: Sentry3DCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         [
-            PrinterSentryStatusSensor(coordinator, entry),
-            PrinterSentryConfidenceSensor(coordinator, entry),
-            PrinterSentryShortExplanationSensor(coordinator, entry),
+            Sentry3DStatusSensor(coordinator, entry),
+            Sentry3DConfidenceSensor(coordinator, entry),
+            Sentry3DShortExplanationSensor(coordinator, entry),
         ]
     )
 
 
-class PrinterSentryBaseEntity(CoordinatorEntity[PrinterSentryCoordinator]):
-    """Base entity for PrinterSentry."""
+class Sentry3DBaseEntity(CoordinatorEntity[Sentry3DCoordinator]):
+    """Base entity for Sentry3D."""
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: PrinterSentryCoordinator, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: Sentry3DCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._entry = entry
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": coordinator.integration_name,
-            "manufacturer": "PrinterSentry",
+            "manufacturer": "Sentry3D",
             "model": "RTSP + Ollama Vision Monitor",
             "configuration_url": coordinator.ollama_base_url,
         }
 
 
-class PrinterSentryStatusSensor(PrinterSentryBaseEntity, SensorEntity):
+class Sentry3DStatusSensor(Sentry3DBaseEntity, SensorEntity):
     """Represents latest print health status."""
 
     _attr_name = "Status"
 
-    def __init__(self, coordinator: PrinterSentryCoordinator, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: Sentry3DCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_status"
         self._attr_icon = "mdi:printer-3d"
@@ -81,14 +81,14 @@ class PrinterSentryStatusSensor(PrinterSentryBaseEntity, SensorEntity):
         }
 
 
-class PrinterSentryConfidenceSensor(PrinterSentryBaseEntity, SensorEntity):
+class Sentry3DConfidenceSensor(Sentry3DBaseEntity, SensorEntity):
     """Represents latest confidence score."""
 
     _attr_name = "Confidence"
     _attr_icon = "mdi:chart-line"
     _attr_suggested_display_precision = 3
 
-    def __init__(self, coordinator: PrinterSentryCoordinator, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: Sentry3DCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_confidence"
 
@@ -100,13 +100,13 @@ class PrinterSentryConfidenceSensor(PrinterSentryBaseEntity, SensorEntity):
         return round(float(confidence), 3)
 
 
-class PrinterSentryShortExplanationSensor(PrinterSentryBaseEntity, SensorEntity):
+class Sentry3DShortExplanationSensor(Sentry3DBaseEntity, SensorEntity):
     """Represents the short explanation returned by inference."""
 
     _attr_name = "Short Explanation"
     _attr_icon = "mdi:text-short"
 
-    def __init__(self, coordinator: PrinterSentryCoordinator, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: Sentry3DCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_short_explanation"
 

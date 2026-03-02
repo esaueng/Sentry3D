@@ -1,4 +1,4 @@
-"""Core parsing and incident logic for PrinterSentry."""
+"""Core parsing and incident logic for Sentry3D."""
 
 from __future__ import annotations
 

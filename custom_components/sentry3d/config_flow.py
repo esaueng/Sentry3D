@@ -1,4 +1,4 @@
-"""Config flow for PrinterSentry."""
+"""Config flow for Sentry3D."""
 
 from __future__ import annotations
 
@@ -227,8 +227,8 @@ def _validate_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-class PrinterSentryConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle the config flow for PrinterSentry."""
+class Sentry3DConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle the config flow for Sentry3D."""
 
     VERSION = 1
 
@@ -286,13 +286,13 @@ class PrinterSentryConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
-    def async_get_options_flow(entry: config_entries.ConfigEntry) -> "PrinterSentryOptionsFlow":
+    def async_get_options_flow(entry: config_entries.ConfigEntry) -> "Sentry3DOptionsFlow":
         """Create options flow."""
-        return PrinterSentryOptionsFlow(entry)
+        return Sentry3DOptionsFlow(entry)
 
 
-class PrinterSentryOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for PrinterSentry."""
+class Sentry3DOptionsFlow(config_entries.OptionsFlow):
+    """Handle options for Sentry3D."""
 
     def __init__(self, entry: config_entries.ConfigEntry) -> None:
         self._entry = entry

@@ -1,4 +1,4 @@
-"""PrinterSentry integration."""
+"""Sentry3D integration."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from .const import (
     SERVICE_CANCEL_PRINT,
     SERVICE_PAUSE_PRINT,
 )
-from .coordinator import PrinterSentryCoordinator
+from .coordinator import Sentry3DCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,14 +28,14 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the PrinterSentry integration."""
+    """Set up the Sentry3D integration."""
     hass.data.setdefault(DOMAIN, {})
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up PrinterSentry from a config entry."""
-    coordinator = PrinterSentryCoordinator(hass, entry)
+    """Set up Sentry3D from a config entry."""
+    coordinator = Sentry3DCoordinator(hass, entry)
     await coordinator.async_initialize()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
@@ -53,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    coordinator: PrinterSentryCoordinator | None = hass.data.get(DOMAIN, {}).pop(
+    coordinator: Sentry3DCoordinator | None = hass.data.get(DOMAIN, {}).pop(
         entry.entry_id, None
     )
 
@@ -71,7 +71,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle config entry options updates."""
-    coordinator: PrinterSentryCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: Sentry3DCoordinator = hass.data[DOMAIN][entry.entry_id]
     await coordinator.async_handle_config_update(entry)
 
 

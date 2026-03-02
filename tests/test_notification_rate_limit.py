@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from custom_components.printersentry.logic import should_send_notification
+from custom_components.sentry3d.logic import should_send_notification
 
 
 def test_notification_sent_for_new_incident() -> None:

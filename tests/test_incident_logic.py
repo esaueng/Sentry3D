@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from custom_components.printersentry.const import (
+from custom_components.sentry3d.const import (
     STATUS_EMPTY,
     STATUS_HEALTHY,
     STATUS_UNHEALTHY,
     STATUS_UNKNOWN,
 )
-from custom_components.printersentry.logic import apply_incident_logic
+from custom_components.sentry3d.logic import apply_incident_logic
 
 
 def test_incident_triggers_on_threshold() -> None:

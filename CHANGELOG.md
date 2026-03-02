@@ -1,10 +1,17 @@
 # Changelog
 
+## 0.3.0 - 2026-03-02
+
+- Renamed integration/domain to `sentry3d`
+- Moved component path to `custom_components/sentry3d`
+- Updated all entities/events/service prefixes and imports to `sentry3d`
+- Updated project branding to `Sentry3D` across docs, translations, and metadata
+
 ## 0.2.0 - 2026-03-01
 
 - Added motion-gated inference so LLM calls are skipped when no motion is detected
-- Added `binary_sensor.printersentry_motion_detected`
-- Added `binary_sensor.printersentry_llm_reachable`
+- Added `binary_sensor.sentry3d_motion_detected`
+- Added `binary_sensor.sentry3d_llm_reachable`
 - Added provider support for `ollama` and `openai` APIs via config/options flow
 - Added OpenAI settings (`openai_base_url`, `openai_model`, `openai_api_key`)
 - Added motion settings (`motion_detection_enabled`, `motion_threshold`)
@@ -24,7 +31,7 @@
 
 - Added `EMPTY` model status for clearly empty build plates
 - Added `short_explanation` output field and exposed it in HA state/history
-- Added `button.printersentry_force_update` to trigger immediate refresh
+- Added `button.sentry3d_force_update` to trigger immediate refresh
 
 ## 0.1.3 - 2026-03-01
 

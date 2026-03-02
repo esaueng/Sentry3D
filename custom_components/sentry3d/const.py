@@ -1,8 +1,8 @@
-"""Constants for PrinterSentry."""
+"""Constants for Sentry3D."""
 
 from __future__ import annotations
 
-DOMAIN = "printersentry"
+DOMAIN = "sentry3d"
 
 PLATFORMS = ["sensor", "binary_sensor", "camera", "button"]
 
@@ -36,13 +36,13 @@ STATUS_UNKNOWN = "UNKNOWN"
 LLM_PROVIDER_OLLAMA = "ollama"
 LLM_PROVIDER_OPENAI = "openai"
 
-EVENT_INCIDENT = "printersentry_incident"
-EVENT_CONTROL_STUB = "printersentry_control_stub"
+EVENT_INCIDENT = "sentry3d_incident"
+EVENT_CONTROL_STUB = "sentry3d_control_stub"
 
 SERVICE_PAUSE_PRINT = "pause_print"
 SERVICE_CANCEL_PRINT = "cancel_print"
 
-DEFAULT_NAME = "PrinterSentry"
+DEFAULT_NAME = "Sentry3D"
 DEFAULT_CHECK_INTERVAL_SEC = 2
 DEFAULT_OLLAMA_TIMEOUT_SEC = 30
 DEFAULT_HISTORY_SIZE = 200

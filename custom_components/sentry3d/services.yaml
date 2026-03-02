@@ -2,12 +2,12 @@ pause_print:
   name: Pause Print (Stub)
   description: >-
     Stub service. Does not control the printer. Logs a warning and fires
-    the printersentry_control_stub event.
+    the sentry3d_control_stub event.
   fields: {}
 
 cancel_print:
   name: Cancel Print (Stub)
   description: >-
     Stub service. Does not control the printer. Logs a warning and fires
-    the printersentry_control_stub event.
+    the sentry3d_control_stub event.
   fields: {}

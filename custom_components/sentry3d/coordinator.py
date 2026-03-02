@@ -1,4 +1,4 @@
-"""Data coordinator for PrinterSentry."""
+"""Data coordinator for Sentry3D."""
 
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ class RetryableLLMError(Exception):
     """Raised for retryable LLM transport failures."""
 
 
-class PrinterSentryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinates capture, inference, and incident lifecycle."""
 
     config_entry: ConfigEntry
@@ -772,9 +772,9 @@ class PrinterSentryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 f"Reason: {result.reason}\n"
                 f"Short explanation: {result.short_explanation}\n"
                 f"Time: {now.isoformat()}\n\n"
-                "Open camera.printersentry_last_frame (or your dashboard card) to inspect the print."
+                "Open camera.sentry3d_last_frame (or your dashboard card) to inspect the print."
             ),
-            title="PrinterSentry Alert: Print Unhealthy",
+            title="Sentry3D Alert: Print Unhealthy",
             notification_id=f"{DOMAIN}_{self.config_entry.entry_id}_incident",
         )
 

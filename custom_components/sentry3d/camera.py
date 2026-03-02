@@ -1,4 +1,4 @@
-"""Camera platform for PrinterSentry."""
+"""Camera platform for Sentry3D."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import PrinterSentryCoordinator
+from .coordinator import Sentry3DCoordinator
 
 
 async def async_setup_entry(
@@ -17,26 +17,26 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up PrinterSentry camera entity."""
-    coordinator: PrinterSentryCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([PrinterSentryLastFrameCamera(coordinator, entry)])
+    """Set up Sentry3D camera entity."""
+    coordinator: Sentry3DCoordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([Sentry3DLastFrameCamera(coordinator, entry)])
 
 
-class PrinterSentryLastFrameCamera(CoordinatorEntity[PrinterSentryCoordinator], Camera):
+class Sentry3DLastFrameCamera(CoordinatorEntity[Sentry3DCoordinator], Camera):
     """Camera entity exposing the latest captured frame."""
 
     _attr_has_entity_name = True
     _attr_name = "Last Frame"
     _attr_icon = "mdi:cctv"
 
-    def __init__(self, coordinator: PrinterSentryCoordinator, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: Sentry3DCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_last_frame"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": coordinator.integration_name,
-            "manufacturer": "PrinterSentry",
+            "manufacturer": "Sentry3D",
             "model": "RTSP + Ollama Vision Monitor",
         }
 

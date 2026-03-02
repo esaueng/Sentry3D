@@ -5,12 +5,12 @@ from __future__ import annotations
 import pytest
 import json
 
-from custom_components.printersentry.const import (
+from custom_components.sentry3d.const import (
     STATUS_EMPTY,
     STATUS_HEALTHY,
     STATUS_UNHEALTHY,
 )
-from custom_components.printersentry.logic import parse_model_output
+from custom_components.sentry3d.logic import parse_model_output
 
 
 VALID_UNHEALTHY = """

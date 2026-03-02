@@ -1,6 +1,6 @@
-# PrinterSentry
+# Sentry3D
 
-PrinterSentry is a Home Assistant custom integration (HACS-compatible) that monitors a 3D printer RTSP/RTSPS camera stream and classifies print health as `HEALTHY`, `UNHEALTHY`, or `EMPTY` using a remote vision LLM (Ollama or OpenAI-compatible API).
+Sentry3D is a Home Assistant custom integration (HACS-compatible) that monitors a 3D printer RTSP/RTSPS camera stream and classifies print health as `HEALTHY`, `UNHEALTHY`, or `EMPTY` using a remote vision LLM (Ollama or OpenAI-compatible API).
 
 It runs inside Home Assistant (Core / Container / OS). This repository does **not** run an Ollama container.
 
@@ -17,22 +17,22 @@ It runs inside Home Assistant (Core / Container / OS). This repository does **no
   - `signals`: defect booleans
 - Incident logic using consecutive unhealthy threshold
 - Home Assistant entities:
-  - `sensor.printersentry_status`
-  - `sensor.printersentry_confidence`
-  - `sensor.printersentry_short_explanation`
-  - `binary_sensor.printersentry_unhealthy`
-  - `binary_sensor.printersentry_incident_active`
-  - `binary_sensor.printersentry_motion_detected`
-  - `binary_sensor.printersentry_llm_reachable`
-  - `camera.printersentry_last_frame`
-  - `button.printersentry_force_update`
-- Event on incident trigger: `printersentry_incident`
+  - `sensor.sentry3d_status`
+  - `sensor.sentry3d_confidence`
+  - `sensor.sentry3d_short_explanation`
+  - `binary_sensor.sentry3d_unhealthy`
+  - `binary_sensor.sentry3d_incident_active`
+  - `binary_sensor.sentry3d_motion_detected`
+  - `binary_sensor.sentry3d_llm_reachable`
+  - `camera.sentry3d_last_frame`
+  - `button.sentry3d_force_update`
+- Event on incident trigger: `sentry3d_incident`
 - Optional persistent notification on incident with rate-limiting
 - Ring-buffer history (last `N`) with optional restore on restart via HA `Store`
 - Diagnostics endpoint with URL credential redaction
 - Stub printer-control services:
-  - `printersentry.pause_print`
-  - `printersentry.cancel_print`
+  - `sentry3d.pause_print`
+  - `sentry3d.cancel_print`
 
 ## Requirements
 
@@ -55,20 +55,20 @@ Example model names: `llava`, `llava:13b`, or another vision-capable model avail
 
 1. Open HACS in Home Assistant.
 1. Add this repository as a custom repository (category: Integration).
-1. Install `PrinterSentry`.
+1. Install `Sentry3D`.
 1. Restart Home Assistant.
 
 ### Manual
 
-1. Copy `custom_components/printersentry` into your HA config directory under `custom_components/`.
+1. Copy `custom_components/sentry3d` into your HA config directory under `custom_components/`.
 1. Restart Home Assistant.
 
 ## Configuration
 
 1. In Home Assistant UI, go to `Settings -> Devices & Services -> Add Integration`.
-1. Search for `PrinterSentry`.
+1. Search for `Sentry3D`.
 1. Enter required values:
-   - `name` (default `PrinterSentry`)
+   - `name` (default `Sentry3D`)
    - `rtsp_url`
    - `ollama_base_url` (example: `http://ollama-host:11434`)
    - `ollama_model`
@@ -95,14 +95,14 @@ Options can be updated later via the integration options dialog. Changes are app
 - Incident triggers when `UNHEALTHY` appears for `M` consecutive checks.
 - On trigger:
   - `incident_active` becomes `true`
-  - Event `printersentry_incident` is fired
+  - Event `sentry3d_incident` is fired
   - Optional persistent notification is created
 - Incident clears after a `HEALTHY` or `EMPTY` result.
 - While incident is active, additional notifications are rate-limited by `min_notification_interval_sec`.
 
 ## Events and Services
 
-### Event: `printersentry_incident`
+### Event: `sentry3d_incident`
 
 Payload includes:
 
@@ -114,21 +114,21 @@ Payload includes:
 - `timestamp`
 - `signals`
 
-### Event: `printersentry_control_stub`
+### Event: `sentry3d_control_stub`
 
 Fired when a stub control service is called.
 
 ### Services (stub only)
 
-- `printersentry.pause_print`
-- `printersentry.cancel_print`
+- `sentry3d.pause_print`
+- `sentry3d.cancel_print`
 
 These services do not control hardware. They only log and fire a stub event.
 
 ## Example Automation Ideas
 
-- Trigger on `binary_sensor.printersentry_incident_active` turning on
-- Trigger on event `printersentry_incident`
+- Trigger on `binary_sensor.sentry3d_incident_active` turning on
+- Trigger on event `sentry3d_incident`
 - Route alert to mobile app, Pushover, Telegram, Slack, etc.
 
 ## Troubleshooting
@@ -154,11 +154,11 @@ These services do not control hardware. They only log and fire a stub event.
 
 - Ensure `llm_provider` is `openai`.
 - Confirm `openai_base_url`, `openai_model`, and `openai_api_key`.
-- Check `binary_sensor.printersentry_llm_reachable` and status attributes for reachability.
+- Check `binary_sensor.sentry3d_llm_reachable` and status attributes for reachability.
 
 ### JSON parsing failures
 
-- PrinterSentry enforces strict JSON output.
+- Sentry3D enforces strict JSON output.
 - Invalid output is retried once, then marked `UNKNOWN`.
 - Check Home Assistant logs for parser details.
 
