@@ -78,6 +78,7 @@ class Sentry3DStatusSensor(Sentry3DBaseEntity, SensorEntity):
             "incident_active": data.get("incident_active", False),
             "last_notification_time": data.get("last_notification_time"),
             "last_frame_time": data.get("last_frame_time"),
+            "last_llm_frame_time": data.get("last_llm_frame_time"),
         }
 
 

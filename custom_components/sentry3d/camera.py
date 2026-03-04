@@ -23,11 +23,12 @@ async def async_setup_entry(
 
 
 class Sentry3DLastFrameCamera(CoordinatorEntity[Sentry3DCoordinator], Camera):
-    """Camera entity exposing the latest captured frame."""
+    """Camera entity exposing the latest frame sent to the LLM."""
 
     _attr_has_entity_name = True
-    _attr_name = "Last Frame"
+    _attr_name = "Last LLM Frame"
     _attr_icon = "mdi:cctv"
+    _attr_content_type = "image/jpeg"
 
     def __init__(self, coordinator: Sentry3DCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
@@ -42,7 +43,10 @@ class Sentry3DLastFrameCamera(CoordinatorEntity[Sentry3DCoordinator], Camera):
 
     @property
     def available(self) -> bool:
-        return self.coordinator.last_frame is not None
+        return (
+            self.coordinator.last_llm_frame is not None
+            or self.coordinator.last_frame is not None
+        )
 
     @property
     def is_streaming(self) -> bool:
@@ -53,12 +57,20 @@ class Sentry3DLastFrameCamera(CoordinatorEntity[Sentry3DCoordinator], Camera):
         width: int | None = None,
         height: int | None = None,
     ) -> bytes | None:
-        """Return the latest JPEG frame bytes."""
-        return self.coordinator.last_frame
+        """Return the latest JPEG frame bytes sent to the LLM."""
+        return self.coordinator.last_llm_frame or self.coordinator.last_frame
 
     @property
     def extra_state_attributes(self) -> dict[str, str | None]:
+        frame_source = None
+        if self.coordinator.last_llm_frame is not None:
+            frame_source = "llm"
+        elif self.coordinator.last_frame is not None:
+            frame_source = "capture_fallback"
+
         return {
+            "frame_source": frame_source,
             "last_frame_time": self.coordinator.data.get("last_frame_time"),
+            "last_llm_frame_time": self.coordinator.data.get("last_llm_frame_time"),
             "last_update": self.coordinator.data.get("last_update"),
         }

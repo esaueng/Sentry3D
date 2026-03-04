@@ -24,7 +24,7 @@ It runs inside Home Assistant (Core / Container / OS). This repository does **no
   - `binary_sensor.sentry3d_incident_active`
   - `binary_sensor.sentry3d_motion_detected`
   - `binary_sensor.sentry3d_llm_reachable`
-  - `camera.sentry3d_last_frame`
+  - `camera.sentry3d_last_frame` (shows the latest frame that was sent to the LLM)
   - `button.sentry3d_force_update`
 - Event on incident trigger: `sentry3d_incident`
 - Optional persistent notification on incident with rate-limiting

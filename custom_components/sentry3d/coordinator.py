@@ -100,6 +100,8 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self._last_frame: bytes | None = None
         self._last_frame_time: datetime | None = None
+        self._last_llm_frame: bytes | None = None
+        self._last_llm_frame_time: datetime | None = None
         self._incident_active = False
         self._incident_start_time: datetime | None = None
         self._consecutive_unhealthy_count = 0
@@ -128,6 +130,11 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self._last_frame
 
     @property
+    def last_llm_frame(self) -> bytes | None:
+        """Return last frame bytes sent to the LLM."""
+        return self._last_llm_frame
+
+    @property
     def history(self) -> list[dict[str, Any]]:
         """Return history list."""
         return list(self._history)
@@ -149,6 +156,12 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "motion_score": self._motion_score,
             "llm_reachable": self._llm_reachable,
             "llm_provider": self.llm_provider,
+            "last_frame_time": self._last_frame_time.isoformat()
+            if self._last_frame_time
+            else None,
+            "last_llm_frame_time": self._last_llm_frame_time.isoformat()
+            if self._last_llm_frame_time
+            else None,
         }
 
     def _read_entry_options(self) -> None:
@@ -315,6 +328,9 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._llm_reachable = (
                 bool(llm_reachable) if isinstance(llm_reachable, bool) else None
             )
+            llm_frame_time_raw = latest.get("llm_frame_time")
+            if isinstance(llm_frame_time_raw, str):
+                self._last_llm_frame_time = dt_util.parse_datetime(llm_frame_time_raw)
             self.data = self._default_state("Restored from history")
             self.data.update(
                 {
@@ -329,6 +345,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "llm_provider": self.llm_provider,
                     "last_update": latest.get("timestamp"),
                     "last_frame_time": latest.get("frame_time"),
+                    "last_llm_frame_time": latest.get("llm_frame_time"),
                     "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
                     "incident_active": self._incident_active,
                     "incident_start_time": self._incident_start_time.isoformat()
@@ -376,6 +393,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "llm_provider": self.llm_provider,
             "last_update": None,
             "last_frame_time": None,
+            "last_llm_frame_time": None,
             "consecutive_unhealthy_count": 0,
             "incident_active": False,
             "incident_start_time": None,
@@ -449,6 +467,8 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             result.short_explanation = "No motion detected"
             return await self._async_finalize_cycle(result, now)
 
+        self._last_llm_frame = frame
+        self._last_llm_frame_time = now
         result = await self._async_infer_frame(frame)
         return await self._async_finalize_cycle(result, now)
 
@@ -727,6 +747,9 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "last_frame_time": self._last_frame_time.isoformat()
             if self._last_frame_time
             else None,
+            "last_llm_frame_time": self._last_llm_frame_time.isoformat()
+            if self._last_llm_frame_time
+            else None,
             "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
             "incident_active": self._incident_active,
             "incident_start_time": self._incident_start_time.isoformat()
@@ -749,6 +772,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "llm_reachable": self._llm_reachable,
             "llm_provider": self.llm_provider,
             "frame_time": state["last_frame_time"],
+            "llm_frame_time": state["last_llm_frame_time"],
             "incident_active": self._incident_active,
             "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
         }
