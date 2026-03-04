@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-03-03
+
+- Config/options flow now uses a base step plus provider-specific step:
+  - `ollama` shows only Ollama fields
+  - `openai` shows only OpenAI fields
+- Provider-specific requirements now apply only to the selected provider
+- Added complete local brand asset variants (`dark_*`, `@2x`) under `custom_components/sentry3d/brand`
+
 ## 0.3.0 - 2026-03-02
 
 - Renamed integration/domain to `sentry3d`

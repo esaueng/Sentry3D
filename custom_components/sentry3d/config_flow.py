@@ -92,7 +92,7 @@ def _entry_defaults(entry: config_entries.ConfigEntry) -> dict[str, Any]:
     return defaults
 
 
-def _build_common_schema(defaults: dict[str, Any]) -> vol.Schema:
+def _build_base_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(CONF_NAME, default=defaults[CONF_NAME]): TextSelector(),
@@ -107,102 +107,107 @@ def _build_common_schema(defaults: dict[str, Any]) -> vol.Schema:
                     translation_key=CONF_LLM_PROVIDER,
                 )
             ),
-            vol.Required(
-                CONF_CHECK_INTERVAL_SEC,
-                default=defaults[CONF_CHECK_INTERVAL_SEC],
-            ): NumberSelector(
-                NumberSelectorConfig(min=1, max=3600, mode=NumberSelectorMode.BOX)
-            ),
-            vol.Required(
-                CONF_OLLAMA_TIMEOUT_SEC,
-                default=defaults[CONF_OLLAMA_TIMEOUT_SEC],
-            ): NumberSelector(
-                NumberSelectorConfig(min=5, max=300, mode=NumberSelectorMode.BOX)
-            ),
-            vol.Required(CONF_HISTORY_SIZE, default=defaults[CONF_HISTORY_SIZE]): NumberSelector(
-                NumberSelectorConfig(min=10, max=2000, mode=NumberSelectorMode.BOX)
-            ),
-            vol.Required(
-                CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD,
-                default=defaults[CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD],
-            ): NumberSelector(
-                NumberSelectorConfig(min=1, max=100, mode=NumberSelectorMode.BOX)
-            ),
-            vol.Required(
-                CONF_MAX_BACKOFF_SEC,
-                default=defaults[CONF_MAX_BACKOFF_SEC],
-            ): NumberSelector(
-                NumberSelectorConfig(min=1, max=600, mode=NumberSelectorMode.BOX)
-            ),
-            vol.Required(
-                CONF_CAPTURE_METHOD,
-                default=defaults[CONF_CAPTURE_METHOD],
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=[CAPTURE_METHOD_FFMPEG, CAPTURE_METHOD_OPENCV],
-                    mode=SelectSelectorMode.DROPDOWN,
-                    translation_key=CONF_CAPTURE_METHOD,
-                )
-            ),
-            vol.Required(
-                CONF_NOTIFY_ON_INCIDENT,
-                default=defaults[CONF_NOTIFY_ON_INCIDENT],
-            ): BooleanSelector(),
-            vol.Required(
-                CONF_MIN_NOTIFICATION_INTERVAL_SEC,
-                default=defaults[CONF_MIN_NOTIFICATION_INTERVAL_SEC],
-            ): NumberSelector(
-                NumberSelectorConfig(min=0, max=86400, mode=NumberSelectorMode.BOX)
-            ),
-            vol.Required(
-                CONF_MOTION_DETECTION_ENABLED,
-                default=defaults[CONF_MOTION_DETECTION_ENABLED],
-            ): BooleanSelector(),
-            vol.Required(
-                CONF_MOTION_THRESHOLD,
-                default=defaults[CONF_MOTION_THRESHOLD],
-            ): NumberSelector(
-                NumberSelectorConfig(min=0.1, max=255.0, mode=NumberSelectorMode.BOX)
-            ),
         }
     )
+
+
+def _runtime_schema_fields(defaults: dict[str, Any]) -> dict[Any, Any]:
+    return {
+        vol.Required(
+            CONF_CHECK_INTERVAL_SEC,
+            default=defaults[CONF_CHECK_INTERVAL_SEC],
+        ): NumberSelector(
+            NumberSelectorConfig(min=1, max=3600, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(
+            CONF_OLLAMA_TIMEOUT_SEC,
+            default=defaults[CONF_OLLAMA_TIMEOUT_SEC],
+        ): NumberSelector(
+            NumberSelectorConfig(min=5, max=300, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(CONF_HISTORY_SIZE, default=defaults[CONF_HISTORY_SIZE]): NumberSelector(
+            NumberSelectorConfig(min=10, max=2000, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(
+            CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD,
+            default=defaults[CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD],
+        ): NumberSelector(
+            NumberSelectorConfig(min=1, max=100, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(
+            CONF_MAX_BACKOFF_SEC,
+            default=defaults[CONF_MAX_BACKOFF_SEC],
+        ): NumberSelector(
+            NumberSelectorConfig(min=1, max=600, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(
+            CONF_CAPTURE_METHOD,
+            default=defaults[CONF_CAPTURE_METHOD],
+        ): SelectSelector(
+            SelectSelectorConfig(
+                options=[CAPTURE_METHOD_FFMPEG, CAPTURE_METHOD_OPENCV],
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key=CONF_CAPTURE_METHOD,
+            )
+        ),
+        vol.Required(
+            CONF_NOTIFY_ON_INCIDENT,
+            default=defaults[CONF_NOTIFY_ON_INCIDENT],
+        ): BooleanSelector(),
+        vol.Required(
+            CONF_MIN_NOTIFICATION_INTERVAL_SEC,
+            default=defaults[CONF_MIN_NOTIFICATION_INTERVAL_SEC],
+        ): NumberSelector(
+            NumberSelectorConfig(min=0, max=86400, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(
+            CONF_MOTION_DETECTION_ENABLED,
+            default=defaults[CONF_MOTION_DETECTION_ENABLED],
+        ): BooleanSelector(),
+        vol.Required(
+            CONF_MOTION_THRESHOLD,
+            default=defaults[CONF_MOTION_THRESHOLD],
+        ): NumberSelector(
+            NumberSelectorConfig(min=0.1, max=255.0, mode=NumberSelectorMode.BOX)
+        ),
+    }
 
 
 def _build_ollama_schema(defaults: dict[str, Any]) -> vol.Schema:
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_OLLAMA_BASE_URL,
-                default=defaults[CONF_OLLAMA_BASE_URL],
-            ): TextSelector(),
-            vol.Required(
-                CONF_OLLAMA_MODEL,
-                default=defaults[CONF_OLLAMA_MODEL],
-            ): TextSelector(),
-        }
-    )
+    fields: dict[Any, Any] = {
+        vol.Required(
+            CONF_OLLAMA_BASE_URL,
+            default=defaults[CONF_OLLAMA_BASE_URL],
+        ): TextSelector(),
+        vol.Required(
+            CONF_OLLAMA_MODEL,
+            default=defaults[CONF_OLLAMA_MODEL],
+        ): TextSelector(),
+    }
+    fields.update(_runtime_schema_fields(defaults))
+    return vol.Schema(fields)
 
 
 def _build_openai_schema(defaults: dict[str, Any]) -> vol.Schema:
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_OPENAI_BASE_URL,
-                default=defaults[CONF_OPENAI_BASE_URL],
-            ): TextSelector(),
-            vol.Required(
-                CONF_OPENAI_MODEL,
-                default=defaults[CONF_OPENAI_MODEL],
-            ): TextSelector(),
-            vol.Required(
-                CONF_OPENAI_API_KEY,
-                default=defaults[CONF_OPENAI_API_KEY],
-            ): TextSelector(),
-        }
-    )
+    fields: dict[Any, Any] = {
+        vol.Required(
+            CONF_OPENAI_BASE_URL,
+            default=defaults[CONF_OPENAI_BASE_URL],
+        ): TextSelector(),
+        vol.Required(
+            CONF_OPENAI_MODEL,
+            default=defaults[CONF_OPENAI_MODEL],
+        ): TextSelector(),
+        vol.Required(
+            CONF_OPENAI_API_KEY,
+            default=defaults[CONF_OPENAI_API_KEY],
+        ): TextSelector(),
+    }
+    fields.update(_runtime_schema_fields(defaults))
+    return vol.Schema(fields)
 
 
-def _validate_common_input(user_input: dict[str, Any]) -> dict[str, Any]:
+def _validate_base_input(user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(user_input)
 
     name = str(data[CONF_NAME]).strip() or DEFAULT_NAME
@@ -218,6 +223,12 @@ def _validate_common_input(user_input: dict[str, Any]) -> dict[str, Any]:
     if provider not in {LLM_PROVIDER_OLLAMA, LLM_PROVIDER_OPENAI}:
         raise ValueError("invalid_llm_provider")
     data[CONF_LLM_PROVIDER] = provider
+
+    return data
+
+
+def _validate_runtime_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    data = dict(user_input)
 
     numeric_fields = (
         CONF_CHECK_INTERVAL_SEC,
@@ -284,14 +295,10 @@ def _validate_openai_input(user_input: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-def _merge_flow_data(
-    defaults: dict[str, Any],
-    common: dict[str, Any],
-    provider_specific: dict[str, Any],
-) -> dict[str, Any]:
+def _merge_flow_data(defaults: dict[str, Any], *sources: dict[str, Any]) -> dict[str, Any]:
     merged = dict(defaults)
-    merged.update(common)
-    merged.update(provider_specific)
+    for source in sources:
+        merged.update(source)
     return merged
 
 
@@ -301,38 +308,38 @@ class Sentry3DConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     _defaults: dict[str, Any]
-    _common_input: dict[str, Any]
+    _base_input: dict[str, Any]
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle common settings step."""
+        """Handle base settings step."""
         errors: dict[str, str] = {}
         self._defaults = getattr(self, "_defaults", _default_values())
 
         if user_input is not None:
             try:
-                self._common_input = _validate_common_input(user_input)
+                self._base_input = _validate_base_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
-                self._defaults.update(self._common_input)
-                if self._common_input[CONF_LLM_PROVIDER] == LLM_PROVIDER_OPENAI:
+                self._defaults.update(self._base_input)
+                if self._base_input[CONF_LLM_PROVIDER] == LLM_PROVIDER_OPENAI:
                     return await self.async_step_openai()
                 return await self.async_step_ollama()
             self._defaults.update(user_input)
 
         return self.async_show_form(
             step_id="user",
-            data_schema=_build_common_schema(self._defaults),
+            data_schema=_build_base_schema(self._defaults),
             errors=errors,
         )
 
     async def async_step_ollama(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle Ollama provider settings step."""
-        if not hasattr(self, "_common_input"):
+        """Handle Ollama provider and runtime settings step."""
+        if not hasattr(self, "_base_input"):
             return await self.async_step_user()
 
         errors: dict[str, str] = {}
@@ -340,11 +347,17 @@ class Sentry3DConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
+                runtime_input = _validate_runtime_input(user_input)
                 provider_input = _validate_ollama_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
-                validated = _merge_flow_data(defaults, self._common_input, provider_input)
+                validated = _merge_flow_data(
+                    defaults,
+                    self._base_input,
+                    runtime_input,
+                    provider_input,
+                )
                 unique_source = (
                     f"{validated[CONF_RTSP_URL]}::{validated[CONF_LLM_PROVIDER]}::{validated[CONF_OLLAMA_BASE_URL]}"
                 )
@@ -366,8 +379,8 @@ class Sentry3DConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_openai(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle OpenAI provider settings step."""
-        if not hasattr(self, "_common_input"):
+        """Handle OpenAI provider and runtime settings step."""
+        if not hasattr(self, "_base_input"):
             return await self.async_step_user()
 
         errors: dict[str, str] = {}
@@ -375,11 +388,17 @@ class Sentry3DConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
+                runtime_input = _validate_runtime_input(user_input)
                 provider_input = _validate_openai_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
-                validated = _merge_flow_data(defaults, self._common_input, provider_input)
+                validated = _merge_flow_data(
+                    defaults,
+                    self._base_input,
+                    runtime_input,
+                    provider_input,
+                )
                 unique_source = (
                     f"{validated[CONF_RTSP_URL]}::{validated[CONF_LLM_PROVIDER]}::{validated[CONF_OPENAI_BASE_URL]}"
                 )
@@ -414,43 +433,49 @@ class Sentry3DOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage common options."""
+        """Manage base options step."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             try:
-                self._common_input = _validate_common_input(user_input)
+                self._base_input = _validate_base_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
-                self._defaults.update(self._common_input)
-                if self._common_input[CONF_LLM_PROVIDER] == LLM_PROVIDER_OPENAI:
+                self._defaults.update(self._base_input)
+                if self._base_input[CONF_LLM_PROVIDER] == LLM_PROVIDER_OPENAI:
                     return await self.async_step_openai()
                 return await self.async_step_ollama()
             self._defaults.update(user_input)
 
         return self.async_show_form(
             step_id="init",
-            data_schema=_build_common_schema(self._defaults),
+            data_schema=_build_base_schema(self._defaults),
             errors=errors,
         )
 
     async def async_step_ollama(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage Ollama provider options."""
-        if not hasattr(self, "_common_input"):
+        """Manage Ollama provider and runtime options."""
+        if not hasattr(self, "_base_input"):
             return await self.async_step_init()
 
         errors: dict[str, str] = {}
 
         if user_input is not None:
             try:
+                runtime_input = _validate_runtime_input(user_input)
                 provider_input = _validate_ollama_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
-                merged = _merge_flow_data(self._defaults, self._common_input, provider_input)
+                merged = _merge_flow_data(
+                    self._defaults,
+                    self._base_input,
+                    runtime_input,
+                    provider_input,
+                )
                 return self.async_create_entry(title="", data=merged)
             self._defaults.update(user_input)
 
@@ -463,19 +488,25 @@ class Sentry3DOptionsFlow(config_entries.OptionsFlow):
     async def async_step_openai(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage OpenAI provider options."""
-        if not hasattr(self, "_common_input"):
+        """Manage OpenAI provider and runtime options."""
+        if not hasattr(self, "_base_input"):
             return await self.async_step_init()
 
         errors: dict[str, str] = {}
 
         if user_input is not None:
             try:
+                runtime_input = _validate_runtime_input(user_input)
                 provider_input = _validate_openai_input(user_input)
             except ValueError as err:
                 errors["base"] = str(err)
             else:
-                merged = _merge_flow_data(self._defaults, self._common_input, provider_input)
+                merged = _merge_flow_data(
+                    self._defaults,
+                    self._base_input,
+                    runtime_input,
+                    provider_input,
+                )
                 return self.async_create_entry(title="", data=merged)
             self._defaults.update(user_input)
 

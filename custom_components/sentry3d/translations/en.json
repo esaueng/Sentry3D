@@ -4,11 +4,19 @@
     "step": {
       "user": {
         "title": "Add Sentry3D",
-        "description": "Monitor a printer RTSP stream with remote vision LLM classification.",
+        "description": "Set base settings first. Provider-specific fields are shown on the next step.",
         "data": {
           "name": "Name",
           "rtsp_url": "RTSP URL",
-          "llm_provider": "LLM Provider",
+          "llm_provider": "LLM Provider"
+        }
+      },
+      "ollama": {
+        "title": "Ollama Settings",
+        "description": "Configure Ollama connection and runtime behavior.",
+        "data": {
+          "ollama_base_url": "Ollama Base URL",
+          "ollama_model": "Ollama Model",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",
           "history_size": "History Size",
@@ -21,21 +29,23 @@
           "motion_threshold": "Motion Threshold"
         }
       },
-      "ollama": {
-        "title": "Ollama Settings",
-        "description": "Configure Ollama-specific connection details.",
-        "data": {
-          "ollama_base_url": "Ollama Base URL",
-          "ollama_model": "Ollama Model"
-        }
-      },
       "openai": {
         "title": "OpenAI Settings",
-        "description": "Configure OpenAI-specific connection details.",
+        "description": "Configure OpenAI connection and runtime behavior.",
         "data": {
           "openai_base_url": "OpenAI Base URL",
           "openai_model": "OpenAI Model",
-          "openai_api_key": "OpenAI API Key"
+          "openai_api_key": "OpenAI API Key",
+          "check_interval_sec": "Check Interval (seconds)",
+          "ollama_timeout_sec": "Ollama Timeout (seconds)",
+          "history_size": "History Size",
+          "unhealthy_consecutive_threshold": "Unhealthy Consecutive Threshold",
+          "max_backoff_sec": "Max Backoff (seconds)",
+          "capture_method": "Capture Method",
+          "notify_on_incident": "Notify on Incident",
+          "min_notification_interval_sec": "Minimum Notification Interval (seconds)",
+          "motion_detection_enabled": "Motion Detection Enabled",
+          "motion_threshold": "Motion Threshold"
         }
       }
     },
@@ -55,11 +65,19 @@
     "step": {
       "init": {
         "title": "Sentry3D Options",
-        "description": "Update Sentry3D runtime options.",
+        "description": "Set base options first. Provider-specific fields are shown on the next step.",
         "data": {
           "name": "Name",
           "rtsp_url": "RTSP URL",
-          "llm_provider": "LLM Provider",
+          "llm_provider": "LLM Provider"
+        }
+      },
+      "ollama": {
+        "title": "Ollama Settings",
+        "description": "Update Ollama connection and runtime behavior.",
+        "data": {
+          "ollama_base_url": "Ollama Base URL",
+          "ollama_model": "Ollama Model",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",
           "history_size": "History Size",
@@ -72,21 +90,23 @@
           "motion_threshold": "Motion Threshold"
         }
       },
-      "ollama": {
-        "title": "Ollama Settings",
-        "description": "Update Ollama-specific connection details.",
-        "data": {
-          "ollama_base_url": "Ollama Base URL",
-          "ollama_model": "Ollama Model"
-        }
-      },
       "openai": {
         "title": "OpenAI Settings",
-        "description": "Update OpenAI-specific connection details.",
+        "description": "Update OpenAI connection and runtime behavior.",
         "data": {
           "openai_base_url": "OpenAI Base URL",
           "openai_model": "OpenAI Model",
-          "openai_api_key": "OpenAI API Key"
+          "openai_api_key": "OpenAI API Key",
+          "check_interval_sec": "Check Interval (seconds)",
+          "ollama_timeout_sec": "Ollama Timeout (seconds)",
+          "history_size": "History Size",
+          "unhealthy_consecutive_threshold": "Unhealthy Consecutive Threshold",
+          "max_backoff_sec": "Max Backoff (seconds)",
+          "capture_method": "Capture Method",
+          "notify_on_incident": "Notify on Incident",
+          "min_notification_interval_sec": "Minimum Notification Interval (seconds)",
+          "motion_detection_enabled": "Motion Detection Enabled",
+          "motion_threshold": "Motion Threshold"
         }
       }
     },
