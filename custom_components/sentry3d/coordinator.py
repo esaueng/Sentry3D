@@ -117,6 +117,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._motion_score: float | None = None
         self._previous_motion_signature: list[int] | None = None
         self._llm_reachable: bool | None = None
+        self._force_inference_once = False
 
         self._read_entry_options()
 
@@ -324,6 +325,14 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             name=f"{DOMAIN}_{self.config_entry.entry_id}_config_refresh",
         )
 
+    async def async_force_update(self) -> None:
+        """Force a refresh that bypasses motion gating once."""
+        self._force_inference_once = True
+        try:
+            await self.async_request_refresh()
+        finally:
+            self._force_inference_once = False
+
     async def _async_restore_store(self) -> None:
         """Restore history and incident state from storage."""
         stored = await self._store.async_load()
@@ -442,9 +451,14 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Run one full check cycle."""
         now = dt_util.utcnow()
+        force_inference = self._force_inference_once
 
         try:
-            if self._capture_backoff_until and now < self._capture_backoff_until:
+            if (
+                not force_inference
+                and self._capture_backoff_until
+                and now < self._capture_backoff_until
+            ):
                 remaining = (self._capture_backoff_until - now).total_seconds()
                 result = unknown_result(
                     f"Capture backoff active ({remaining:.1f}s remaining)"
@@ -469,23 +483,31 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     now,
                 )
             except Exception as err:  # noqa: BLE001
-                self._capture_backoff_sec = (
-                    self.check_interval_sec
-                    if self._capture_backoff_sec == 0
-                    else min(self.max_backoff_sec, self._capture_backoff_sec * 2)
-                )
-                delay_sec = self._capture_backoff_sec + random.uniform(
-                    0, max(0.1, self._capture_backoff_sec * 0.25)
-                )
-                self._capture_backoff_until = now + timedelta(seconds=delay_sec)
-                _LOGGER.warning(
-                    "RTSP frame capture failed for %s: %s. Retrying in %.1fs",
-                    self.rtsp_url,
-                    err,
-                    delay_sec,
-                )
-                result = unknown_result(f"Frame capture failed: {err}")
-                return await self._async_finalize_cycle(result, now)
+                if force_inference and self._last_frame is not None:
+                    _LOGGER.warning(
+                        "Forced refresh capture failed for %s; reusing last frame: %s",
+                        self.integration_name,
+                        err,
+                    )
+                    frame = self._last_frame
+                else:
+                    self._capture_backoff_sec = (
+                        self.check_interval_sec
+                        if self._capture_backoff_sec == 0
+                        else min(self.max_backoff_sec, self._capture_backoff_sec * 2)
+                    )
+                    delay_sec = self._capture_backoff_sec + random.uniform(
+                        0, max(0.1, self._capture_backoff_sec * 0.25)
+                    )
+                    self._capture_backoff_until = now + timedelta(seconds=delay_sec)
+                    _LOGGER.warning(
+                        "RTSP frame capture failed for %s: %s. Retrying in %.1fs",
+                        self.rtsp_url,
+                        err,
+                        delay_sec,
+                    )
+                    result = unknown_result(f"Frame capture failed: {err}")
+                    return await self._async_finalize_cycle(result, now)
 
             (
                 self._motion_detected,
@@ -498,7 +520,11 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.motion_threshold,
             )
 
-            if self.motion_detection_enabled and not self._motion_detected:
+            if (
+                self.motion_detection_enabled
+                and not force_inference
+                and not self._motion_detected
+            ):
                 _LOGGER.debug(
                     "No motion detected for %s, skipping LLM inference",
                     self.integration_name,
@@ -510,6 +536,9 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._last_llm_frame = frame
             self._last_llm_frame_time = now
             result = await self._async_infer_frame(frame)
+            if force_inference and result.status == STATUS_UNKNOWN:
+                result.reason = f"Forced refresh failed: {result.reason}"
+                result.short_explanation = "Force refresh failed"
             return await self._async_finalize_cycle(result, now)
         except asyncio.CancelledError:
             raise

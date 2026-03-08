@@ -41,4 +41,4 @@ class Sentry3DForceUpdateButton(CoordinatorEntity[Sentry3DCoordinator], ButtonEn
 
     async def async_press(self) -> None:
         """Force an immediate status refresh."""
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_force_update()

@@ -61,6 +61,35 @@ def test_parse_normalizes_long_short_explanation() -> None:
     assert result.short_explanation == "Build plate appears clean"
 
 
+def test_parse_accepts_code_fenced_json_and_string_values() -> None:
+    payload = {
+        "status": "unhealthy",
+        "confidence": "0.83",
+        "reason": "There is spaghetti on the bed.",
+        "short_explanation": "There is spaghetti on the bed",
+        "focus_region": {
+            "x": "0.42",
+            "y": "0.19",
+            "width": "0.21",
+            "height": "0.33",
+        },
+        "signals": {
+            "bed_adhesion_ok": "false",
+            "spaghetti_detected": "true",
+            "layer_shift_detected": "false",
+            "detached_part_detected": "false",
+            "blob_detected": "false",
+            "supports_failed_detected": "false",
+            "print_missing_detected": "false",
+        },
+    }
+
+    result = parse_model_output(f"```json\n{json.dumps(payload)}\n```")
+    assert result.status == STATUS_UNHEALTHY
+    assert result.confidence == 0.83
+    assert result.short_explanation == "Spaghetti on the bed"
+
+
 def test_parse_rejects_non_json_wrapping() -> None:
     with pytest.raises(ValueError):
         parse_model_output(f"model says: {VALID_UNHEALTHY}")

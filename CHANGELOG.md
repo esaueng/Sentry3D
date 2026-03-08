@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.8 - 2026-03-08
+
+- Force Update button now bypasses motion gating for one refresh and sends a frame to the LLM immediately
+- Forced refresh will reuse the last captured frame if a fresh capture fails
+- Parser now accepts common model-response variants such as fenced JSON, lowercase status values, and numeric/boolean strings
+
 ## 0.3.7 - 2026-03-08
 
 - Prevented coordinator update exceptions from making all coordinator-backed entities unavailable

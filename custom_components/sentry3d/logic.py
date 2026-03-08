@@ -88,7 +88,7 @@ def _derive_short_explanation(text: str, fallback: str = "Unknown") -> str:
 
 def parse_model_output(raw_text: str) -> InferenceResult:
     """Parse and validate strict JSON output from Ollama."""
-    stripped = raw_text.strip()
+    stripped = _extract_json_object(raw_text)
     if not stripped:
         raise ValueError("Empty model output")
 
@@ -105,13 +105,21 @@ def parse_model_output(raw_text: str) -> InferenceResult:
         raise ValueError("Output must be a JSON object")
 
     status = payload.get("status")
+    if isinstance(status, str):
+        status = status.strip().upper()
     if status not in (STATUS_HEALTHY, STATUS_UNHEALTHY, STATUS_EMPTY):
         raise ValueError("Invalid status")
 
     confidence = payload.get("confidence")
-    if not isinstance(confidence, (int, float)) or isinstance(confidence, bool):
+    if isinstance(confidence, str):
+        try:
+            confidence = float(confidence.strip())
+        except ValueError as err:
+            raise ValueError("Confidence must be numeric") from err
+    elif not isinstance(confidence, (int, float)) or isinstance(confidence, bool):
         raise ValueError("Confidence must be numeric")
-    confidence = float(confidence)
+    else:
+        confidence = float(confidence)
     if confidence <= 0.0 or confidence >= 1.0:
         raise ValueError("Confidence must be between 0 and 1 (exclusive)")
 
@@ -140,6 +148,12 @@ def parse_model_output(raw_text: str) -> InferenceResult:
     signals: dict[str, bool] = {}
     for key in REQUIRED_SIGNAL_KEYS:
         value = signals_raw.get(key)
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered == "true":
+                value = True
+            elif lowered == "false":
+                value = False
         if not isinstance(value, bool):
             raise ValueError(f"Signal {key} must be boolean")
         signals[key] = value
@@ -167,9 +181,15 @@ def parse_model_output(raw_text: str) -> InferenceResult:
         focus_region = {}
         for key in ("x", "y", "width", "height"):
             value = focus_region_raw.get(key)
-            if not isinstance(value, (int, float)) or isinstance(value, bool):
+            if isinstance(value, str):
+                try:
+                    value = float(value.strip())
+                except ValueError as err:
+                    raise ValueError(f"focus_region.{key} must be numeric") from err
+            elif not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise ValueError(f"focus_region.{key} must be numeric")
-            value = float(value)
+            else:
+                value = float(value)
             if value < 0.0 or value > 1.0:
                 raise ValueError(f"focus_region.{key} must be between 0 and 1")
             focus_region[key] = value
@@ -204,6 +224,28 @@ def unknown_result(reason: str) -> InferenceResult:
         signals={key: False for key in REQUIRED_SIGNAL_KEYS},
         focus_region=None,
     )
+
+
+def _extract_json_object(raw_text: str) -> str:
+    """Extract the main JSON object from raw model text."""
+    stripped = raw_text.strip()
+    if not stripped:
+        return ""
+
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if len(lines) >= 3 and lines[-1].strip() == "```":
+            stripped = "\n".join(lines[1:-1]).strip()
+
+    if stripped.startswith("{") and stripped.endswith("}"):
+        return stripped
+
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return stripped[start : end + 1].strip()
+
+    return stripped
 
 
 def is_confident_unhealthy(
