@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.4 - 2026-03-07
+
+- Replaced the default vision prompt with a stricter build-plate-focused inspection prompt
+- Kept `short_explanation` and `focus_region` in the default schema so the HA UI and overlay preview continue to work
+
 ## 0.3.3 - 2026-03-07
 
 - Added optional `focus_region` parsing for unhealthy model responses
