@@ -86,6 +86,10 @@ class RetryableLLMError(Exception):
     """Raised for retryable LLM transport failures."""
 
 
+class UnreachableLLMError(Exception):
+    """Raised when the LLM endpoint cannot be reached."""
+
+
 class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinates capture, inference, and incident lifecycle."""
 
@@ -587,7 +591,6 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     model_text = await self._async_openai_chat(frame)
                 else:
                     model_text = await self._async_ollama_chat(frame)
-                self._llm_reachable = True
                 return parse_model_output(model_text)
             except ValueError as err:
                 if parse_attempt < INVALID_JSON_RETRY_COUNT:
@@ -600,8 +603,15 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     continue
                 _LOGGER.error("Model output parsing failed: %s", err)
                 return unknown_result(f"Invalid model JSON response: {err}")
-            except Exception as err:  # noqa: BLE001
+            except UnreachableLLMError as err:
                 self._llm_reachable = False
+                _LOGGER.error(
+                    "LLM inference failed for %s: %s",
+                    self.integration_name,
+                    err,
+                )
+                return unknown_result(f"LLM inference failed: {err}")
+            except Exception as err:  # noqa: BLE001
                 _LOGGER.error(
                     "LLM inference failed for %s: %s",
                     self.integration_name,
@@ -636,6 +646,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for attempt in range(MAX_HTTP_RETRIES):
             try:
                 async with self._session.post(url, json=payload, timeout=timeout) as response:
+                    self._llm_reachable = True
                     if response.status >= 500:
                         raise RetryableLLMError(f"HTTP {response.status}")
                     if response.status >= 400:
@@ -664,7 +675,9 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 RetryableLLMError,
             ) as err:
                 if attempt >= MAX_HTTP_RETRIES - 1:
-                    raise RuntimeError("Max retries reached for Ollama request") from err
+                    raise UnreachableLLMError(
+                        "Max retries reached for Ollama request"
+                    ) from err
                 base_delay = min(self.max_backoff_sec, 2**attempt)
                 delay = base_delay + random.uniform(0, max(0.1, base_delay * 0.3))
                 _LOGGER.warning(
@@ -676,7 +689,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
                 await asyncio.sleep(delay)
 
-        raise RuntimeError("Unable to call Ollama")
+        raise UnreachableLLMError("Unable to call Ollama")
 
     async def _async_openai_chat(self, frame: bytes) -> str:
         """Call OpenAI-compatible chat completions endpoint."""
@@ -718,6 +731,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     headers=headers,
                     timeout=timeout,
                 ) as response:
+                    self._llm_reachable = True
                     if response.status >= 500:
                         raise RetryableLLMError(f"HTTP {response.status}")
                     if response.status >= 400:
@@ -751,7 +765,9 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 RetryableLLMError,
             ) as err:
                 if attempt >= MAX_HTTP_RETRIES - 1:
-                    raise RuntimeError("Max retries reached for OpenAI request") from err
+                    raise UnreachableLLMError(
+                        "Max retries reached for OpenAI request"
+                    ) from err
                 base_delay = min(self.max_backoff_sec, 2**attempt)
                 delay = base_delay + random.uniform(0, max(0.1, base_delay * 0.3))
                 _LOGGER.warning(
@@ -763,7 +779,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
                 await asyncio.sleep(delay)
 
-        raise RuntimeError("Unable to call OpenAI")
+        raise UnreachableLLMError("Unable to call OpenAI")
 
     async def _async_finalize_cycle(
         self,

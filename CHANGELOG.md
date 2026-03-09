@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.11 - 2026-03-08
+
+- Fixed `LLM Reachable` semantics so it reflects whether the Ollama/OpenAI endpoint answered over HTTP
+- Parse failures and other post-response model issues no longer incorrectly mark the LLM as unreachable
+
 ## 0.3.10 - 2026-03-08
 
 - Force Update now runs a dedicated immediate capture + inference cycle instead of relying on the normal coordinator refresh queue
