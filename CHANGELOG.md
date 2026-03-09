@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.13 - 2026-03-08
+
+- Replaced the packaged default vision prompt with the updated build-plate-focused inspection prompt
+- Added a `Use Default Prompt` setup/options toggle so a saved custom prompt can be reset back to the packaged default on submit
+
 ## 0.3.12 - 2026-03-08
 
 - Tightened `short_explanation` normalization to strip filler phrases and cap output more aggressively for Home Assistant history cards

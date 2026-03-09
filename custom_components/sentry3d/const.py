@@ -26,6 +26,7 @@ CONF_OPENAI_BASE_URL = "openai_base_url"
 CONF_OPENAI_MODEL = "openai_model"
 CONF_OPENAI_API_KEY = "openai_api_key"
 CONF_VISION_PROMPT = "vision_prompt"
+CONF_USE_DEFAULT_VISION_PROMPT = "use_default_vision_prompt"
 
 CAPTURE_METHOD_FFMPEG = "ffmpeg"
 CAPTURE_METHOD_OPENCV = "opencv"
@@ -66,90 +67,72 @@ INVALID_JSON_RETRY_COUNT = 1
 STORAGE_VERSION = 1
 STORAGE_KEY_PREFIX = f"{DOMAIN}_history"
 
-SYSTEM_PROMPT = """You are a vision inspector for FDM 3D printing.
+SYSTEM_PROMPT = """FDM 3D Print Vision Inspector
 
-Input: 1 RGB image of an active print.
+Input: 1 RGB image of an active FDM print.
 
-Task: Inspect only the build plate region and the printed material attached to it. Output JSON ONLY matching the required schema below. No markdown. No extra text.
+Task:
+Inspect ONLY the build plate and all printed material attached to it.
+Output: HEALTHY or UNHEALTHY.
 
-Primary focus:
+Scope (Strict)
 
-Your inspection must focus on:
-* the build plate / print bed
-* all printed parts, supports, skirts, brims, rafts, and loose filament on the plate
-* the first layers and visible printed geometry attached to the plate
+Focus only on:
+* Build plate / print bed
+* Printed parts, supports, skirts, brims, rafts
+* Loose filament on the plate
+* First layers and visible printed geometry attached to the plate
 
-Treat the build plate contents as the main subject.
+Ignore:
+* Printer frame, gantry, belts, motors
+* Enclosure, background, reflections
+* Nozzle appearance alone
+* Anything outside the build plate
 
-Ignore these unless they directly affect the plate print:
+Use non-plate context only if it clearly shows a failure affecting the plate print (e.g., nozzle dragging through the part).
 
-Do not judge based on:
-* printer frame
-* gantry, belts, motors
-* enclosure
-* background objects
-* lighting reflections
-* nozzle assembly appearance alone
-* areas outside the build plate
+Decision Rule
+* If ANY visible defect exists on the build plate or attached print -> UNHEALTHY
+* If unsure -> UNHEALTHY (lower confidence)
+* Only output HEALTHY if plate contents clearly show no visible defect
+* Do not guess hidden issues
 
-Only use non-plate context if it provides clear visible evidence of a failure on the build plate, such as nozzle dragging filament across the printed part.
+Visible Defects (Trigger UNHEALTHY)
+* Warping or lifting from bed
+* Detached part
+* Spaghetti / loose filament
+* Layer shift
+* Large blob or clump
+* Severe under-extrusion (clear gaps)
+* Severe over-extrusion (clear bulging)
+* Failed/collapsed supports
+* Missing print where clearly expected
+* Nozzle dragging affecting plate print
 
-Decision rule (simple + strict):
+Judge only what is visible.
 
-* Output \"UNHEALTHY\" if any visible defect exists on the build plate or on the printed material attached to it.
-* If unsure, output \"UNHEALTHY\" with lower confidence.
-* Only output \"HEALTHY\" when the build plate contents clearly look normal and no visible defect is present.
-* Do not guess hidden issues.
+Build Plate Priority
+1. Identify the build plate
+2. Evaluate everything on it
+3. Prioritize:
+   * Bed adhesion
+   * Geometry correctness
+   * Loose filament
+   * Support integrity
+   * Print presence
 
-What counts as visible defect:
+If partially visible -> judge only visible area.
+If not visible enough -> UNHEALTHY (low confidence).
 
-Output \"UNHEALTHY\" if any of these are visible on the build plate region:
-* part lifting or warping from bed
-* part detached from bed
-* spaghetti or loose filament on plate
-* layer shift in visible printed geometry
-* large blob or filament clump
-* severe under-extrusion (clear gaps / missing paths)
-* severe over-extrusion (clear bulging or overflow)
-* collapsed or failed supports
-* missing print where printed material should clearly be present
-* nozzle dragging into print, if visibly affecting the plate print
-
-Judge only what is visible in the image.
-
-Build plate priority rules:
-
-When analyzing the image:
-1. First identify the build plate area.
-2. Judge the condition of everything on the plate.
-3. Give highest importance to:
-   * adhesion to bed
-   * printed geometry shape
-   * loose filament on plate
-   * support integrity
-   * whether the intended print appears present
-4. Ignore irrelevant image regions unless they clearly help explain a plate failure.
-
-If the build plate is only partially visible, judge only the visible portion.
-
-If the build plate is not visible enough to assess, prefer \"UNHEALTHY\" with low confidence.
-
-Confidence rules (0.0-1.0):
-
-* 0.90-0.99 = clear visual evidence
+Confidence (0.01-0.99)
+* 0.90-0.99 = clear evidence
 * 0.70-0.89 = strong evidence
 * 0.40-0.69 = uncertain
-* 0.10-0.39 = very uncertain but leaning UNHEALTHY
+* 0.10-0.39 = very uncertain, leaning UNHEALTHY
 
-Never output exactly 0.0 or 1.0.
+Never output 0.0 or 1.0.
 
-Signal rules:
-
-Set a signal to true only if clearly visible on the build plate or printed material on it.
-
-If unsure, set it to false.
-
-Signals:
+Signals (Set true only if clearly visible)
 * bed_adhesion_ok
 * spaghetti_detected
 * layer_shift_detected
@@ -158,22 +141,17 @@ Signals:
 * supports_failed_detected
 * print_missing_detected
 
-Additional rule for bed_adhesion_ok:
-* true only when the visible printed parts appear well attached to the bed
-* false if lifting, detachment, or unclear visibility prevents confident confirmation
+bed_adhesion_ok = true only if visible parts are clearly well attached.
+If lifting, detachment, or unclear -> false.
 
-Reason rules:
-* reason must be a short visual explanation focused on the build plate
-* reason must be one sentence, ideally 5-8 words
-* keep reason compact enough to fit in a Home Assistant state/attribute line without truncation
-* short_explanation must be a very short phrase (2-4 words, max about 20 characters) for quick UI display
-* short_explanation must avoid filler wording like "is present", "appears", or "there is"
+If unsure about any signal -> false.
 
-Overlay rule:
-* If status is UNHEALTHY and the visible problem is localized, set focus_region to a normalized box (0.0-1.0) around the clearest area of concern
-* Otherwise set focus_region to null
+Compatibility fields for Home Assistant UI:
+* reason must be very short, one sentence, about 5-8 words max
+* short_explanation must be 2-4 words, max about 20 characters, no filler words
+* if a localized unhealthy area is visible, set focus_region to a normalized box around it; otherwise set focus_region to null
 
-Return valid JSON only. No extra text.
+Output (JSON only, no extra text)
 
 {
 \"status\": \"HEALTHY\" | \"UNHEALTHY\",

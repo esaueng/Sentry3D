@@ -17,6 +17,7 @@
         "data": {
           "ollama_base_url": "Ollama Base URL",
           "ollama_model": "Ollama Model",
+          "use_default_vision_prompt": "Use Default Prompt",
           "vision_prompt": "Vision Prompt",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",
@@ -38,6 +39,7 @@
           "openai_base_url": "OpenAI Base URL",
           "openai_model": "OpenAI Model",
           "openai_api_key": "OpenAI API Key",
+          "use_default_vision_prompt": "Use Default Prompt",
           "vision_prompt": "Vision Prompt",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",
@@ -84,6 +86,7 @@
         "data": {
           "ollama_base_url": "Ollama Base URL",
           "ollama_model": "Ollama Model",
+          "use_default_vision_prompt": "Use Default Prompt",
           "vision_prompt": "Vision Prompt",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",
@@ -105,6 +108,7 @@
           "openai_base_url": "OpenAI Base URL",
           "openai_model": "OpenAI Model",
           "openai_api_key": "OpenAI API Key",
+          "use_default_vision_prompt": "Use Default Prompt",
           "vision_prompt": "Vision Prompt",
           "check_interval_sec": "Check Interval (seconds)",
           "ollama_timeout_sec": "Ollama Timeout (seconds)",

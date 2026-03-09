@@ -42,6 +42,7 @@ from .const import (
     CONF_OPENAI_BASE_URL,
     CONF_OPENAI_MODEL,
     CONF_RTSP_URL,
+    CONF_USE_DEFAULT_VISION_PROMPT,
     CONF_UNHEALTHY_CONSECUTIVE_THRESHOLD,
     CONF_UNHEALTHY_CONFIDENCE_THRESHOLD,
     CONF_VISION_PROMPT,
@@ -205,6 +206,10 @@ def _build_ollama_schema(defaults: dict[str, Any]) -> vol.Schema:
             CONF_VISION_PROMPT,
             default=defaults[CONF_VISION_PROMPT],
         ): TextSelector(TextSelectorConfig(multiline=True)),
+        vol.Optional(
+            CONF_USE_DEFAULT_VISION_PROMPT,
+            default=False,
+        ): BooleanSelector(),
     }
     fields.update(_runtime_schema_fields(defaults))
     return vol.Schema(fields)
@@ -228,6 +233,10 @@ def _build_openai_schema(defaults: dict[str, Any]) -> vol.Schema:
             CONF_VISION_PROMPT,
             default=defaults[CONF_VISION_PROMPT],
         ): TextSelector(TextSelectorConfig(multiline=True)),
+        vol.Optional(
+            CONF_USE_DEFAULT_VISION_PROMPT,
+            default=False,
+        ): BooleanSelector(),
     }
     fields.update(_runtime_schema_fields(defaults))
     return vol.Schema(fields)
@@ -290,6 +299,7 @@ def _validate_runtime_input(user_input: dict[str, Any]) -> dict[str, Any]:
 
 def _validate_ollama_input(user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(user_input)
+    use_default_prompt = bool(data.pop(CONF_USE_DEFAULT_VISION_PROMPT, False))
 
     base_url = str(data[CONF_OLLAMA_BASE_URL]).strip().rstrip("/")
     parsed = urlparse(base_url)
@@ -302,16 +312,20 @@ def _validate_ollama_input(user_input: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("invalid_model")
     data[CONF_OLLAMA_MODEL] = model
 
-    vision_prompt = str(data[CONF_VISION_PROMPT]).strip()
-    if not vision_prompt:
-        raise ValueError("missing_vision_prompt")
-    data[CONF_VISION_PROMPT] = vision_prompt
+    if use_default_prompt:
+        data[CONF_VISION_PROMPT] = DEFAULT_VISION_PROMPT
+    else:
+        vision_prompt = str(data[CONF_VISION_PROMPT]).strip()
+        if not vision_prompt:
+            raise ValueError("missing_vision_prompt")
+        data[CONF_VISION_PROMPT] = vision_prompt
 
     return data
 
 
 def _validate_openai_input(user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(user_input)
+    use_default_prompt = bool(data.pop(CONF_USE_DEFAULT_VISION_PROMPT, False))
 
     openai_base = str(data[CONF_OPENAI_BASE_URL]).strip().rstrip("/")
     parsed_openai = urlparse(openai_base)
@@ -329,10 +343,13 @@ def _validate_openai_input(user_input: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("missing_openai_api_key")
     data[CONF_OPENAI_API_KEY] = openai_api_key
 
-    vision_prompt = str(data[CONF_VISION_PROMPT]).strip()
-    if not vision_prompt:
-        raise ValueError("missing_vision_prompt")
-    data[CONF_VISION_PROMPT] = vision_prompt
+    if use_default_prompt:
+        data[CONF_VISION_PROMPT] = DEFAULT_VISION_PROMPT
+    else:
+        vision_prompt = str(data[CONF_VISION_PROMPT]).strip()
+        if not vision_prompt:
+            raise ValueError("missing_vision_prompt")
+        data[CONF_VISION_PROMPT] = vision_prompt
 
     return data
 
