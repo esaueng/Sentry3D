@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.14 - 2026-03-08
+
+- Persisted the latest captured, LLM, and overlay preview frames so the camera entity can restore a real image after reloads/restarts instead of dropping to unavailable
+
 ## 0.3.13 - 2026-03-08
 
 - Replaced the packaged default vision prompt with the updated build-plate-focused inspection prompt

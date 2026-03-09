@@ -82,6 +82,23 @@ from .logic import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _encode_frame(frame: bytes | None) -> str | None:
+    """Encode JPEG bytes for storage."""
+    if frame is None:
+        return None
+    return base64.b64encode(frame).decode("ascii")
+
+
+def _decode_frame(frame_text: Any) -> bytes | None:
+    """Decode stored JPEG bytes."""
+    if not isinstance(frame_text, str) or not frame_text:
+        return None
+    try:
+        return base64.b64decode(frame_text.encode("ascii"), validate=True)
+    except (ValueError, TypeError):
+        return None
+
+
 class RetryableLLMError(Exception):
     """Raised for retryable LLM transport failures."""
 
@@ -369,6 +386,10 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if isinstance(notification_time_raw, str):
             self._last_notification_time = dt_util.parse_datetime(notification_time_raw)
 
+        self._last_frame = _decode_frame(stored.get("last_frame_b64"))
+        self._last_llm_frame = _decode_frame(stored.get("last_llm_frame_b64"))
+        self._last_overlay_frame = _decode_frame(stored.get("last_overlay_frame_b64"))
+
         if self._history:
             latest = self._history[-1]
             self._motion_detected = bool(latest.get("motion_detected", False))
@@ -383,6 +404,9 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             llm_frame_time_raw = latest.get("llm_frame_time")
             if isinstance(llm_frame_time_raw, str):
                 self._last_llm_frame_time = dt_util.parse_datetime(llm_frame_time_raw)
+            frame_time_raw = latest.get("frame_time")
+            if isinstance(frame_time_raw, str):
+                self._last_frame_time = dt_util.parse_datetime(frame_time_raw)
             self.data = self._default_state("Restored from history")
             self.data.update(
                 {
@@ -426,6 +450,9 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "last_notification_time": self._last_notification_time.isoformat()
             if self._last_notification_time
             else None,
+            "last_frame_b64": _encode_frame(self._last_frame),
+            "last_llm_frame_b64": _encode_frame(self._last_llm_frame),
+            "last_overlay_frame_b64": _encode_frame(self._last_overlay_frame),
         }
 
     def _default_state(self, reason: str) -> dict[str, Any]:
