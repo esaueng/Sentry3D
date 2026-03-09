@@ -166,7 +166,8 @@ Reason rules:
 * reason must be a short visual explanation focused on the build plate
 * reason must be one sentence, ideally 5-8 words
 * keep reason compact enough to fit in a Home Assistant state/attribute line without truncation
-* short_explanation must be a very short phrase (3-8 words) for quick UI display
+* short_explanation must be a very short phrase (2-4 words, max about 20 characters) for quick UI display
+* short_explanation must avoid filler wording like "is present", "appears", or "there is"
 
 Overlay rule:
 * If status is UNHEALTHY and the visible problem is localized, set focus_region to a normalized box (0.0-1.0) around the clearest area of concern

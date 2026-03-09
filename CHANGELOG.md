@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.12 - 2026-03-08
+
+- Tightened `short_explanation` normalization to strip filler phrases and cap output more aggressively for Home Assistant history cards
+- Updated the default prompt to request 2-4 word short explanations without filler wording
+
 ## 0.3.11 - 2026-03-08
 
 - Fixed `LLM Reachable` semantics so it reflects whether the Ollama/OpenAI endpoint answered over HTTP

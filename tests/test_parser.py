@@ -58,7 +58,15 @@ def test_parse_normalizes_long_short_explanation() -> None:
     payload["short_explanation"] = "The build plate appears clean and stable"
 
     result = parse_model_output(json.dumps(payload))
-    assert result.short_explanation == "Build plate appears clean"
+    assert result.short_explanation == "Bed clean stable"
+
+
+def test_parse_strips_filler_from_short_explanation() -> None:
+    payload = json.loads(VALID_UNHEALTHY)
+    payload["short_explanation"] = "Loose filament is present on the build plate"
+
+    result = parse_model_output(json.dumps(payload))
+    assert result.short_explanation == "Loose filament bed"
 
 
 def test_parse_normalizes_long_reason() -> None:

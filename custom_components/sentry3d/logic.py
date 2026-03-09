@@ -56,11 +56,29 @@ def _normalize_short_explanation(text: str, fallback: str = "Unknown") -> str:
     if not normalized:
         return fallback
 
+    normalized = normalized.replace("build plate", "bed").replace("print bed", "bed")
     lowered = normalized.lower()
-    for prefix in ("there is ", "there are ", "the ", "a ", "an "):
-        if lowered.startswith(prefix):
+
+    phrase_replacements = (
+        ("there is ", ""),
+        ("there are ", ""),
+        ("is present on the ", ""),
+        ("is present on ", ""),
+        ("present on the ", ""),
+        ("present on ", ""),
+        ("appears to be ", ""),
+        ("appears ", ""),
+        ("visible ", ""),
+        ("visibly ", ""),
+        ("detected ", ""),
+    )
+    for source, target in phrase_replacements:
+        lowered = lowered.replace(source, target)
+    normalized = " ".join(lowered.split())
+
+    for prefix in ("the ", "a ", "an "):
+        if normalized.startswith(prefix):
             normalized = normalized[len(prefix) :].strip()
-            lowered = normalized.lower()
             break
 
     for separator in (":", ";", ".", ",", "\n"):
@@ -69,11 +87,18 @@ def _normalize_short_explanation(text: str, fallback: str = "Unknown") -> str:
             break
 
     words = normalized.split()
-    if len(words) > 4:
-        normalized = " ".join(words[:4])
+    if len(words) > 3:
+        normalized = " ".join(words[:3])
 
-    if len(normalized) > 28:
-        normalized = f"{normalized[:25].rstrip()}..."
+    words = normalized.split()
+    trailing_stop_words = {"on", "the", "a", "an", "at", "with", "from", "of", "to"}
+    while words and words[-1] in trailing_stop_words:
+        words.pop()
+    if words:
+        normalized = " ".join(words)
+
+    if len(normalized) > 20:
+        normalized = f"{normalized[:17].rstrip()}..."
 
     if normalized:
         normalized = normalized[0].upper() + normalized[1:]
