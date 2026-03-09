@@ -117,7 +117,6 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._motion_score: float | None = None
         self._previous_motion_signature: list[int] | None = None
         self._llm_reachable: bool | None = None
-        self._force_inference_once = False
 
         self._read_entry_options()
 
@@ -327,11 +326,21 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_force_update(self) -> None:
         """Force a refresh that bypasses motion gating once."""
-        self._force_inference_once = True
         try:
-            await self.async_request_refresh()
-        finally:
-            self._force_inference_once = False
+            data = await self._async_run_update_cycle(force_inference=True)
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:  # noqa: BLE001
+            now = dt_util.utcnow()
+            _LOGGER.exception(
+                "Forced refresh failed for %s",
+                self.integration_name,
+            )
+            data = self._build_safe_state(
+                reason=f"Forced refresh failed: {err}",
+                now=now,
+            )
+        self.async_set_updated_data(data)
 
     async def _async_restore_store(self) -> None:
         """Restore history and incident state from storage."""
@@ -450,8 +459,11 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Run one full check cycle."""
+        return await self._async_run_update_cycle(force_inference=False)
+
+    async def _async_run_update_cycle(self, *, force_inference: bool) -> dict[str, Any]:
+        """Run one full check cycle, optionally bypassing motion gating/backoff."""
         now = dt_util.utcnow()
-        force_inference = self._force_inference_once
 
         try:
             if (

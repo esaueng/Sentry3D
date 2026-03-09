@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.10 - 2026-03-08
+
+- Force Update now runs a dedicated immediate capture + inference cycle instead of relying on the normal coordinator refresh queue
+- Manual force refresh bypasses motion gating and capture backoff deterministically
+
 ## 0.3.9 - 2026-03-08
 
 - Tightened the default prompt so `reason` is requested as a short 5-8 word sentence
