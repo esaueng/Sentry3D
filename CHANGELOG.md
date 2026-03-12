@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.18 - 2026-03-12
+
+- Added a dedicated `Reason` sensor and exposed the full reason as an attribute on `Short Explanation` so the full explanation remains readable in Home Assistant even though the frontend truncates long state strings
+
 ## 0.3.17 - 2026-03-12
 
 - Stopped invalid `focus_region` overlay coordinates from forcing model results into `UNKNOWN`; bad overlay boxes are now ignored while keeping the health classification

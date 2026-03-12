@@ -25,6 +25,7 @@ async def async_setup_entry(
         [
             Sentry3DStatusSensor(coordinator, entry),
             Sentry3DConfidenceSensor(coordinator, entry),
+            Sentry3DReasonSensor(coordinator, entry),
             Sentry3DShortExplanationSensor(coordinator, entry),
         ]
     )
@@ -121,3 +122,36 @@ class Sentry3DShortExplanationSensor(Sentry3DBaseEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         return str(self.coordinator.data.get("short_explanation", ""))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "reason": self.coordinator.data.get("reason"),
+            "status": self.coordinator.data.get("status"),
+            "confidence": self.coordinator.data.get("confidence"),
+            "last_update": self.coordinator.data.get("last_update"),
+        }
+
+
+class Sentry3DReasonSensor(Sentry3DBaseEntity, SensorEntity):
+    """Represents the fuller reason returned by inference."""
+
+    _attr_name = "Reason"
+    _attr_icon = "mdi:text"
+
+    def __init__(self, coordinator: Sentry3DCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_reason"
+
+    @property
+    def native_value(self) -> str:
+        return str(self.coordinator.data.get("reason", ""))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "short_explanation": self.coordinator.data.get("short_explanation"),
+            "status": self.coordinator.data.get("status"),
+            "confidence": self.coordinator.data.get("confidence"),
+            "last_update": self.coordinator.data.get("last_update"),
+        }
