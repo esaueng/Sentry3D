@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.17 - 2026-03-12
+
+- Stopped invalid `focus_region` overlay coordinates from forcing model results into `UNKNOWN`; bad overlay boxes are now ignored while keeping the health classification
+
 ## 0.3.16 - 2026-03-12
 
 - Fixed a coordinator crash caused by a missing `STATUS_UNHEALTHY` import during result finalization, which was forcing valid updates into `UNKNOWN`

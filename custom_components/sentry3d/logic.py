@@ -215,45 +215,10 @@ def parse_model_output(raw_text: str) -> InferenceResult:
         raise ValueError("Empty output cannot have any signals set")
 
     focus_region_raw = payload.get("focus_region")
-    focus_region: dict[str, float] | None
-    if focus_region_raw is None:
+    focus_region = _parse_focus_region(focus_region_raw)
+
+    if status != STATUS_UNHEALTHY:
         focus_region = None
-    else:
-        if not isinstance(focus_region_raw, dict):
-            raise ValueError("focus_region must be an object or null")
-        required_region_keys = {"x", "y", "width", "height"}
-        if set(focus_region_raw) != required_region_keys:
-            missing = sorted(required_region_keys - set(focus_region_raw))
-            extra = sorted(set(focus_region_raw) - required_region_keys)
-            raise ValueError(
-                f"focus_region keys mismatch: missing={missing}, extra={extra}"
-            )
-
-        focus_region = {}
-        for key in ("x", "y", "width", "height"):
-            value = focus_region_raw.get(key)
-            if isinstance(value, str):
-                try:
-                    value = float(value.strip())
-                except ValueError as err:
-                    raise ValueError(f"focus_region.{key} must be numeric") from err
-            elif not isinstance(value, (int, float)) or isinstance(value, bool):
-                raise ValueError(f"focus_region.{key} must be numeric")
-            else:
-                value = float(value)
-            if value < 0.0 or value > 1.0:
-                raise ValueError(f"focus_region.{key} must be between 0 and 1")
-            focus_region[key] = value
-
-        if focus_region["width"] <= 0.0 or focus_region["height"] <= 0.0:
-            raise ValueError("focus_region width and height must be greater than 0")
-        if focus_region["x"] + focus_region["width"] > 1.0:
-            raise ValueError("focus_region exceeds image width")
-        if focus_region["y"] + focus_region["height"] > 1.0:
-            raise ValueError("focus_region exceeds image height")
-
-    if status != STATUS_UNHEALTHY and focus_region is not None:
-        raise ValueError("focus_region is only valid for UNHEALTHY results")
 
     return InferenceResult(
         status=status,
@@ -263,6 +228,46 @@ def parse_model_output(raw_text: str) -> InferenceResult:
         signals=signals,
         focus_region=focus_region,
     )
+
+
+def _parse_focus_region(focus_region_raw: object) -> dict[str, float] | None:
+    """Parse a focus region, dropping invalid overlays instead of failing inference."""
+    if focus_region_raw is None or not isinstance(focus_region_raw, dict):
+        return None
+
+    required_region_keys = {"x", "y", "width", "height"}
+    if set(focus_region_raw) != required_region_keys:
+        return None
+
+    focus_region: dict[str, float] = {}
+    for key in ("x", "y", "width", "height"):
+        value = focus_region_raw.get(key)
+        if isinstance(value, str):
+            try:
+                value = float(value.strip())
+            except ValueError:
+                return None
+        elif not isinstance(value, (int, float)) or isinstance(value, bool):
+            return None
+        else:
+            value = float(value)
+        focus_region[key] = value
+
+    if (
+        focus_region["x"] < 0.0
+        or focus_region["y"] < 0.0
+        or focus_region["width"] <= 0.0
+        or focus_region["height"] <= 0.0
+        or focus_region["x"] > 1.0
+        or focus_region["y"] > 1.0
+        or focus_region["width"] > 1.0
+        or focus_region["height"] > 1.0
+        or focus_region["x"] + focus_region["width"] > 1.0
+        or focus_region["y"] + focus_region["height"] > 1.0
+    ):
+        return None
+
+    return focus_region
 
 
 def unknown_result(reason: str) -> InferenceResult:

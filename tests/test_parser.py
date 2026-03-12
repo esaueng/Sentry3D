@@ -178,7 +178,7 @@ def test_parse_valid_empty() -> None:
     assert result.focus_region is None
 
 
-def test_parse_rejects_focus_region_for_non_unhealthy() -> None:
+def test_parse_drops_focus_region_for_non_unhealthy() -> None:
     payload = {
         "status": STATUS_HEALTHY,
         "confidence": 0.91,
@@ -196,11 +196,12 @@ def test_parse_rejects_focus_region_for_non_unhealthy() -> None:
         },
     }
 
-    with pytest.raises(ValueError):
-        parse_model_output(json.dumps(payload))
+    result = parse_model_output(json.dumps(payload))
+    assert result.status == STATUS_HEALTHY
+    assert result.focus_region is None
 
 
-def test_parse_rejects_invalid_focus_region_bounds() -> None:
+def test_parse_drops_invalid_focus_region_bounds() -> None:
     payload = {
         "status": STATUS_UNHEALTHY,
         "confidence": 0.74,
@@ -218,8 +219,9 @@ def test_parse_rejects_invalid_focus_region_bounds() -> None:
         },
     }
 
-    with pytest.raises(ValueError):
-        parse_model_output(json.dumps(payload))
+    result = parse_model_output(json.dumps(payload))
+    assert result.status == STATUS_UNHEALTHY
+    assert result.focus_region is None
 
 
 def test_unknown_result_derives_short_explanation() -> None:
