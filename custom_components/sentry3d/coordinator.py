@@ -134,6 +134,8 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_overlay_frame: bytes | None = None
         self._same_frame_count = 0
         self._capture_reused_last_frame = False
+        self._last_model_output: str | None = None
+        self._last_model_output_hash: str | None = None
         self._incident_active = False
         self._incident_start_time: datetime | None = None
         self._consecutive_unhealthy_count = 0
@@ -195,7 +197,11 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "motion_score": self._motion_score,
             "llm_reachable": self._llm_reachable,
             "llm_provider": self.llm_provider,
+            "vision_prompt_hash": _text_digest(self.vision_prompt),
+            "using_default_prompt": self.vision_prompt == DEFAULT_VISION_PROMPT,
             "vision_prompt_length": len(self.vision_prompt),
+            "last_model_output_hash": self._last_model_output_hash,
+            "last_model_output_excerpt": _text_excerpt(self._last_model_output),
             "last_frame_time": self._last_frame_time.isoformat()
             if self._last_frame_time
             else None,
@@ -494,6 +500,10 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "motion_score": None,
             "llm_reachable": None,
             "llm_provider": self.llm_provider,
+            "vision_prompt_hash": _text_digest(self.vision_prompt),
+            "using_default_prompt": self.vision_prompt == DEFAULT_VISION_PROMPT,
+            "last_model_output_hash": None,
+            "last_model_output_excerpt": None,
             "last_update": None,
             "last_frame_time": None,
             "last_frame_hash": None,
@@ -660,6 +670,8 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     model_text = await self._async_openai_chat(frame)
                 else:
                     model_text = await self._async_ollama_chat(frame)
+                self._last_model_output = model_text
+                self._last_model_output_hash = _text_digest(model_text)
                 return parse_model_output(model_text)
             except ValueError as err:
                 if parse_attempt < INVALID_JSON_RETRY_COUNT:
@@ -942,6 +954,10 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "motion_score": self._motion_score,
             "llm_reachable": self._llm_reachable,
             "llm_provider": self.llm_provider,
+            "vision_prompt_hash": _text_digest(self.vision_prompt),
+            "using_default_prompt": self.vision_prompt == DEFAULT_VISION_PROMPT,
+            "last_model_output_hash": self._last_model_output_hash,
+            "last_model_output_excerpt": _text_excerpt(self._last_model_output),
             "last_update": now.isoformat(),
             "last_frame_time": self._last_frame_time.isoformat()
             if self._last_frame_time
@@ -1024,9 +1040,13 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "motion_detected": self._motion_detected,
                 "motion_detection_enabled": self.motion_detection_enabled,
                 "motion_score": self._motion_score,
-                "llm_reachable": self._llm_reachable,
-                "llm_provider": self.llm_provider,
-                "last_update": now.isoformat(),
+            "llm_reachable": self._llm_reachable,
+            "llm_provider": self.llm_provider,
+            "vision_prompt_hash": _text_digest(self.vision_prompt),
+            "using_default_prompt": self.vision_prompt == DEFAULT_VISION_PROMPT,
+            "last_model_output_hash": self._last_model_output_hash,
+            "last_model_output_excerpt": _text_excerpt(self._last_model_output),
+            "last_update": now.isoformat(),
                 "last_frame_time": self._last_frame_time.isoformat()
                 if self._last_frame_time
                 else None,
@@ -1074,6 +1094,23 @@ def _extract_openai_content(content: Any) -> str:
 def _frame_digest(frame: bytes) -> str:
     """Return a short stable digest for a captured frame."""
     return hashlib.sha256(frame).hexdigest()[:12]
+
+
+def _text_digest(text: str | None) -> str | None:
+    """Return a short stable digest for text."""
+    if text is None:
+        return None
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+
+
+def _text_excerpt(text: str | None, length: int = 280) -> str | None:
+    """Return a compact excerpt for HA state attributes."""
+    if text is None:
+        return None
+    normalized = " ".join(text.split())
+    if len(normalized) <= length:
+        return normalized
+    return f"{normalized[: length - 3].rstrip()}..."
 
 
 def _motion_cutoff_from_threshold(threshold: float) -> float:

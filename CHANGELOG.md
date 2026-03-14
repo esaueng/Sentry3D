@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.25 - 2026-03-14
+
+- Added runtime prompt/model-output diagnostics to the status entity so it is easier to verify whether Sentry3D is using the expected prompt and what raw model text was returned
+
 ## 0.3.24 - 2026-03-14
 
 - Added frame hash and reuse diagnostics so Home Assistant can show whether new captures are changing or an older frame was reused

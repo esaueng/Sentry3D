@@ -77,6 +77,10 @@ class Sentry3DStatusSensor(Sentry3DBaseEntity, SensorEntity):
             "motion_score": data.get("motion_score"),
             "llm_reachable": data.get("llm_reachable"),
             "llm_provider": data.get("llm_provider"),
+            "vision_prompt_hash": data.get("vision_prompt_hash"),
+            "using_default_prompt": data.get("using_default_prompt"),
+            "last_model_output_hash": data.get("last_model_output_hash"),
+            "last_model_output_excerpt": data.get("last_model_output_excerpt"),
             "overlay_available": data.get("overlay_available"),
             "unhealthy_confidence_threshold": data.get(
                 "unhealthy_confidence_threshold"
