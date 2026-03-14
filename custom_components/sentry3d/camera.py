@@ -105,6 +105,12 @@ class Sentry3DLastFrameCamera(CoordinatorEntity[Sentry3DCoordinator], Camera):
             "overlay_available": self.coordinator.data.get("overlay_available", False),
             "focus_region": self.coordinator.data.get("focus_region"),
             "last_frame_time": self.coordinator.data.get("last_frame_time"),
+            "last_frame_hash": self.coordinator.data.get("last_frame_hash"),
             "last_llm_frame_time": self.coordinator.data.get("last_llm_frame_time"),
+            "last_llm_frame_hash": self.coordinator.data.get("last_llm_frame_hash"),
+            "same_frame_count": self.coordinator.data.get("same_frame_count"),
+            "capture_reused_last_frame": self.coordinator.data.get(
+                "capture_reused_last_frame"
+            ),
             "last_update": self.coordinator.data.get("last_update"),
         }

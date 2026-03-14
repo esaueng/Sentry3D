@@ -6,6 +6,7 @@ import asyncio
 import base64
 from collections import deque
 from datetime import datetime, timedelta
+import hashlib
 from io import BytesIO
 import logging
 import random
@@ -126,9 +127,13 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self._last_frame: bytes | None = None
         self._last_frame_time: datetime | None = None
+        self._last_frame_hash: str | None = None
         self._last_llm_frame: bytes | None = None
         self._last_llm_frame_time: datetime | None = None
+        self._last_llm_frame_hash: str | None = None
         self._last_overlay_frame: bytes | None = None
+        self._same_frame_count = 0
+        self._capture_reused_last_frame = False
         self._incident_active = False
         self._incident_start_time: datetime | None = None
         self._consecutive_unhealthy_count = 0
@@ -194,9 +199,13 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "last_frame_time": self._last_frame_time.isoformat()
             if self._last_frame_time
             else None,
+            "last_frame_hash": self._last_frame_hash,
             "last_llm_frame_time": self._last_llm_frame_time.isoformat()
             if self._last_llm_frame_time
             else None,
+            "last_llm_frame_hash": self._last_llm_frame_hash,
+            "same_frame_count": self._same_frame_count,
+            "capture_reused_last_frame": self._capture_reused_last_frame,
             "overlay_available": self._last_overlay_frame is not None,
         }
 
@@ -424,7 +433,13 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "llm_provider": self.llm_provider,
                     "last_update": latest.get("timestamp"),
                     "last_frame_time": latest.get("frame_time"),
+                    "last_frame_hash": latest.get("frame_hash"),
                     "last_llm_frame_time": latest.get("llm_frame_time"),
+                    "last_llm_frame_hash": latest.get("llm_frame_hash"),
+                    "same_frame_count": latest.get("same_frame_count", 0),
+                    "capture_reused_last_frame": latest.get(
+                        "capture_reused_last_frame", False
+                    ),
                     "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
                     "unhealthy_confidence_threshold": self.unhealthy_confidence_threshold,
                     "unhealthy_gate_passed": latest.get(
@@ -481,7 +496,11 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "llm_provider": self.llm_provider,
             "last_update": None,
             "last_frame_time": None,
+            "last_frame_hash": None,
             "last_llm_frame_time": None,
+            "last_llm_frame_hash": None,
+            "same_frame_count": 0,
+            "capture_reused_last_frame": False,
             "overlay_available": False,
             "consecutive_unhealthy_count": 0,
             "unhealthy_confidence_threshold": self.unhealthy_confidence_threshold,
@@ -513,8 +532,21 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             try:
                 frame = await self._async_capture_frame()
+                frame_hash = _frame_digest(frame)
+                self._capture_reused_last_frame = False
+                if self._last_frame_hash == frame_hash:
+                    self._same_frame_count += 1
+                    if self._same_frame_count >= 3:
+                        _LOGGER.warning(
+                            "Captured identical frame %s times in a row for %s",
+                            self._same_frame_count,
+                            self.integration_name,
+                        )
+                else:
+                    self._same_frame_count = 0
                 self._last_frame = frame
                 self._last_frame_time = now
+                self._last_frame_hash = frame_hash
                 self._capture_backoff_sec = 0
                 self._capture_backoff_until = None
             except asyncio.CancelledError:
@@ -536,6 +568,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         err,
                     )
                     frame = self._last_frame
+                    self._capture_reused_last_frame = True
                 else:
                     self._capture_backoff_sec = (
                         self.check_interval_sec
@@ -586,6 +619,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             self._last_llm_frame = frame
             self._last_llm_frame_time = now
+            self._last_llm_frame_hash = _frame_digest(frame)
             result = await self._async_infer_frame(frame)
             if force_inference and result.status == STATUS_UNKNOWN:
                 result.reason = f"Forced refresh failed: {result.reason}"
@@ -912,9 +946,13 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "last_frame_time": self._last_frame_time.isoformat()
             if self._last_frame_time
             else None,
+            "last_frame_hash": self._last_frame_hash,
             "last_llm_frame_time": self._last_llm_frame_time.isoformat()
             if self._last_llm_frame_time
             else None,
+            "last_llm_frame_hash": self._last_llm_frame_hash,
+            "same_frame_count": self._same_frame_count,
+            "capture_reused_last_frame": self._capture_reused_last_frame,
             "overlay_available": self._last_overlay_frame is not None,
             "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
             "unhealthy_confidence_threshold": self.unhealthy_confidence_threshold,
@@ -942,7 +980,11 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "llm_reachable": self._llm_reachable,
             "llm_provider": self.llm_provider,
             "frame_time": state["last_frame_time"],
+            "frame_hash": state["last_frame_hash"],
             "llm_frame_time": state["last_llm_frame_time"],
+            "llm_frame_hash": state["last_llm_frame_hash"],
+            "same_frame_count": state["same_frame_count"],
+            "capture_reused_last_frame": state["capture_reused_last_frame"],
             "overlay_available": state["overlay_available"],
             "incident_active": self._incident_active,
             "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
@@ -988,9 +1030,13 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "last_frame_time": self._last_frame_time.isoformat()
                 if self._last_frame_time
                 else None,
+                "last_frame_hash": self._last_frame_hash,
                 "last_llm_frame_time": self._last_llm_frame_time.isoformat()
                 if self._last_llm_frame_time
                 else None,
+                "last_llm_frame_hash": self._last_llm_frame_hash,
+                "same_frame_count": self._same_frame_count,
+                "capture_reused_last_frame": self._capture_reused_last_frame,
                 "overlay_available": self._last_overlay_frame is not None,
                 "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
                 "unhealthy_confidence_threshold": self.unhealthy_confidence_threshold,
@@ -1023,6 +1069,11 @@ def _extract_openai_content(content: Any) -> str:
                     text_parts.append(text.strip())
         return "\n".join(text_parts).strip()
     return ""
+
+
+def _frame_digest(frame: bytes) -> str:
+    """Return a short stable digest for a captured frame."""
+    return hashlib.sha256(frame).hexdigest()[:12]
 
 
 def _motion_cutoff_from_threshold(threshold: float) -> float:
@@ -1149,6 +1200,14 @@ def _capture_frame_ffmpeg(rtsp_url: str, timeout: int) -> bytes:
         "-hide_banner",
         "-loglevel",
         "error",
+        "-fflags",
+        "nobuffer",
+        "-flags",
+        "low_delay",
+        "-analyzeduration",
+        "0",
+        "-probesize",
+        "32",
         "-rtsp_transport",
         "tcp",
         "-i",

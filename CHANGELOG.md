@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.24 - 2026-03-14
+
+- Added frame hash and reuse diagnostics so Home Assistant can show whether new captures are changing or an older frame was reused
+- Hardened ffmpeg capture for lower-latency RTSP frame grabs to reduce stale buffered images
+
 ## 0.3.23 - 2026-03-13
 
 - Tuned the packaged default vision prompt to focus on only very obvious print failures, especially severe spaghetti and other clearly visible major defects
