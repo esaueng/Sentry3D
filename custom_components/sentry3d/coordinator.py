@@ -66,6 +66,8 @@ from .const import (
     LLM_PROVIDER_OLLAMA,
     LLM_PROVIDER_OPENAI,
     MAX_HTTP_RETRIES,
+    STATUS_EMPTY,
+    STATUS_HEALTHY,
     STATUS_UNHEALTHY,
     STATUS_UNKNOWN,
     STORAGE_KEY_PREFIX,
@@ -136,6 +138,7 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._capture_reused_last_frame = False
         self._last_model_output: str | None = None
         self._last_model_output_hash: str | None = None
+        self._last_inference_state: dict[str, Any] | None = None
         self._incident_active = False
         self._incident_start_time: datetime | None = None
         self._consecutive_unhealthy_count = 0
@@ -460,6 +463,27 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     else None,
                 }
             )
+            for record in reversed(self._history):
+                if record.get("status") in {
+                    STATUS_HEALTHY,
+                    STATUS_UNHEALTHY,
+                    STATUS_EMPTY,
+                }:
+                    self._last_inference_state = {
+                        "status": record.get("status", STATUS_UNKNOWN),
+                        "confidence": record.get("confidence"),
+                        "reason": record.get("reason", ""),
+                        "short_explanation": record.get("short_explanation", ""),
+                        "signals": record.get("signals", {}),
+                        "focus_region": record.get("focus_region"),
+                        "last_llm_frame_time": record.get("llm_frame_time"),
+                        "last_llm_frame_hash": record.get("llm_frame_hash"),
+                        "overlay_available": record.get("overlay_available", False),
+                        "unhealthy_gate_passed": record.get(
+                            "unhealthy_gate_passed", False
+                        ),
+                    }
+                    break
 
     def _serialize_store(self) -> dict[str, Any]:
         """Serialize coordinator state for storage."""
@@ -504,6 +528,8 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "using_default_prompt": self.vision_prompt == DEFAULT_VISION_PROMPT,
             "last_model_output_hash": None,
             "last_model_output_excerpt": None,
+            "inference_skipped": False,
+            "skip_reason": None,
             "last_update": None,
             "last_frame_time": None,
             "last_frame_hash": None,
@@ -623,9 +649,10 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "No motion detected for %s, skipping LLM inference",
                     self.integration_name,
                 )
-                result = unknown_result("No motion detected; inference skipped")
-                result.short_explanation = "No motion detected"
-                return await self._async_finalize_cycle(result, now)
+                return self._build_skipped_inference_state(
+                    reason="No motion detected; inference skipped",
+                    now=now,
+                )
 
             self._last_llm_frame = frame
             self._last_llm_frame_time = now
@@ -958,6 +985,8 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "using_default_prompt": self.vision_prompt == DEFAULT_VISION_PROMPT,
             "last_model_output_hash": self._last_model_output_hash,
             "last_model_output_excerpt": _text_excerpt(self._last_model_output),
+            "inference_skipped": False,
+            "skip_reason": None,
             "last_update": now.isoformat(),
             "last_frame_time": self._last_frame_time.isoformat()
             if self._last_frame_time
@@ -1007,6 +1036,19 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "unhealthy_gate_passed": state["unhealthy_gate_passed"],
         }
         self._history.append(history_record)
+        if result.status in {STATUS_HEALTHY, STATUS_UNHEALTHY, STATUS_EMPTY}:
+            self._last_inference_state = {
+                "status": state["status"],
+                "confidence": state["confidence"],
+                "reason": state["reason"],
+                "short_explanation": state["short_explanation"],
+                "signals": state["signals"],
+                "focus_region": state["focus_region"],
+                "last_llm_frame_time": state["last_llm_frame_time"],
+                "last_llm_frame_hash": state["last_llm_frame_hash"],
+                "overlay_available": state["overlay_available"],
+                "unhealthy_gate_passed": state["unhealthy_gate_passed"],
+            }
 
         self.data = state
         self._store.async_delay_save(self._serialize_store, 5)
@@ -1068,6 +1110,63 @@ class Sentry3DCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "last_notification_time": self._last_notification_time.isoformat()
                 if self._last_notification_time
                 else None,
+            }
+        )
+        self.data = state
+        return state
+
+    def _build_skipped_inference_state(
+        self,
+        *,
+        reason: str,
+        now: datetime,
+    ) -> dict[str, Any]:
+        """Preserve the last real inference result when gating skips a cycle."""
+        if self._last_inference_state is None:
+            result = unknown_result(reason)
+            result.short_explanation = "No motion detected"
+            state = self._build_safe_state(reason=result.reason, now=now)
+            state.update(
+                {
+                    "short_explanation": result.short_explanation,
+                    "inference_skipped": True,
+                    "skip_reason": reason,
+                }
+            )
+            self.data = state
+            return state
+
+        state = self._default_state(reason)
+        state.update(self._last_inference_state)
+        state.update(
+            {
+                "motion_detected": self._motion_detected,
+                "motion_detection_enabled": self.motion_detection_enabled,
+                "motion_score": self._motion_score,
+                "llm_reachable": self._llm_reachable,
+                "llm_provider": self.llm_provider,
+                "vision_prompt_hash": _text_digest(self.vision_prompt),
+                "using_default_prompt": self.vision_prompt == DEFAULT_VISION_PROMPT,
+                "last_model_output_hash": self._last_model_output_hash,
+                "last_model_output_excerpt": _text_excerpt(self._last_model_output),
+                "last_update": now.isoformat(),
+                "last_frame_time": self._last_frame_time.isoformat()
+                if self._last_frame_time
+                else None,
+                "last_frame_hash": self._last_frame_hash,
+                "same_frame_count": self._same_frame_count,
+                "capture_reused_last_frame": self._capture_reused_last_frame,
+                "consecutive_unhealthy_count": self._consecutive_unhealthy_count,
+                "unhealthy_confidence_threshold": self.unhealthy_confidence_threshold,
+                "incident_active": self._incident_active,
+                "incident_start_time": self._incident_start_time.isoformat()
+                if self._incident_start_time
+                else None,
+                "last_notification_time": self._last_notification_time.isoformat()
+                if self._last_notification_time
+                else None,
+                "inference_skipped": True,
+                "skip_reason": reason,
             }
         )
         self.data = state

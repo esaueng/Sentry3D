@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.26 - 2026-03-14
+
+- Preserved the last valid LLM classification when motion gating skips inference instead of overwriting the visible state with `UNKNOWN`
+- Added `inference_skipped` and `skip_reason` attributes so skipped cycles are explicit without destroying the last real result
+
 ## 0.3.25 - 2026-03-14
 
 - Added runtime prompt/model-output diagnostics to the status entity so it is easier to verify whether Sentry3D is using the expected prompt and what raw model text was returned

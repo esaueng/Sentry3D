@@ -81,6 +81,8 @@ class Sentry3DStatusSensor(Sentry3DBaseEntity, SensorEntity):
             "using_default_prompt": data.get("using_default_prompt"),
             "last_model_output_hash": data.get("last_model_output_hash"),
             "last_model_output_excerpt": data.get("last_model_output_excerpt"),
+            "inference_skipped": data.get("inference_skipped"),
+            "skip_reason": data.get("skip_reason"),
             "overlay_available": data.get("overlay_available"),
             "unhealthy_confidence_threshold": data.get(
                 "unhealthy_confidence_threshold"
