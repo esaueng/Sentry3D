@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.23 - 2026-03-13
+
+- Tuned the packaged default vision prompt to focus on only very obvious print failures, especially severe spaghetti and other clearly visible major defects
+
 ## 0.3.22 - 2026-03-13
 
 - Replaced the packaged default vision prompt with the updated active-print FDM inspection prompt focused on visible build plate conditions
